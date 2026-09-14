@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#17233f">
+<meta name="description" content="Luma Pro — معالجة وترتيب صور المستمسكات الرسمية على A4">
+<title>Luma Pro v5 — معالجة صور المستمسكات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f3f5f8;--surface:#fff;--surface2:#edf0f5;--ink:#000;--ink2:#000;--line:#d5dbe6;--primary:#a96f25;--primary2:#8b591d;--danger:#b3261e;--success:#23744d;--shadow:0 10px 35px rgba(24,35,61,.12);--radius:14px;--sans:Cairo,sans-serif;--mono:'Roboto Mono',monospace}
+[data-theme="dark"]{--bg:#0c1220;--surface:#141d30;--surface2:#1d2940;--ink:#fff;--ink2:#fff;--line:#31405c;--shadow:0 12px 35px rgba(0,0,0,.35)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans)}body{padding-bottom:86px}button,input,select{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:disabled{opacity:.5;cursor:not-allowed}.hidden{display:none!important}.no-scroll{overflow:hidden}
+.topbar{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:10px 12px calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;box-shadow:0 3px 14px rgba(0,0,0,.16)}
+.brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}.logo{width:38px;height:38px;flex:none}.brandText{min-width:0}.brandText b{display:block;font-size:17px;font-weight:800}.brandText span{font-family:var(--mono);font-size:10px;color:#cbd5e7;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topActions{display:flex;gap:6px}.iconBtn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center}.iconBtn svg{width:20px;height:20px}
+.container{max-width:1100px;margin:auto;padding:12px}.hero{display:flex;flex-direction:column;gap:10px}.modeRow{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}.modeRow button{border:0;background:transparent;color:var(--ink2);padding:12px 8px;font-weight:700}.modeRow button.active{background:var(--ink);color:#fff}.hint{font-size:12px;line-height:1.8;color:var(--ink2);background:var(--surface);padding:11px 12px;border:1px solid var(--line);border-radius:12px}
+.toolbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.toolBtn{min-height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700}.toolBtn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.toolBtn.danger{color:#fff;background:var(--danger);border-color:var(--danger)}.toolBtn svg{width:18px;height:18px}
+/* تحسينات اللمس والحجم للأدوات */
+.toolBtn{min-width:0;height:48px;padding:9px 10px;line-height:1.2;white-space:nowrap}
+.actionBtn{min-height:42px;padding:8px 9px;display:flex;align-items:center;justify-content:center;gap:5px;line-height:1.25;white-space:normal}
+.actionBtn svg{width:17px;height:17px;flex:none}
+.slotActions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+.replaceBtn,.actionBtn.danger{min-height:42px}
+.pageWrap{width:100%;max-width:none}
+.pageScaler{width:100%;max-width:none}
+.previewView .panel{overflow:hidden}
+.printPreviewFrame{width:100%;border:0}
+.choice{position:relative;min-height:62px;padding:8px 10px}
+.choiceMain{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.choiceInsert{width:82px;min-width:82px;height:40px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px}
+.choiceInsert svg{width:16px;height:16px}
+.choiceText{min-width:0}
+@media(max-width:430px){.toolBtn{height:46px;padding:8px 6px;font-size:12px}.actionBtn{min-height:40px;font-size:10px;padding:7px 6px}.choiceInsert{width:76px;min-width:76px}.choice{gap:7px;padding:7px}.choiceIcon{width:36px;height:36px}.choiceText b{font-size:12px}.choiceText small{font-size:9.5px}}
+@media(min-width:720px){.pageWrap{align-items:center}.pageScaler{max-width:760px}.a4page{flex:none}}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body *{visibility:hidden!important}
+  #previewView,#previewView *{visibility:visible!important}
+  #previewView{display:block!important;position:static!important;margin:0!important;padding:0!important}
+  #previewView .panel{border:0!important;box-shadow:none!important;margin:0!important;padding:0!important}
+  #previewView .sectionHeader,#previewView .previewHint{display:none!important}
+  #pagesContainer{display:block!important;width:100%!important;margin:0!important;padding:0!important}
+  #pagesContainer .pageLabel{display:none!important}
+  #pagesContainer .pageScaler{width:210mm!important;height:297mm!important;display:block!important;margin:0!important;overflow:visible!important}
+  #pagesContainer .a4page{width:210mm!important;height:297mm!important;transform:none!important;box-shadow:none!important;border:0!important;margin:0!important}
+  #pagesContainer .a4page + *{}
+}
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:8px;border-bottom:1px solid var(--line)}.tabs button{border:0;background:none;color:var(--ink2);padding:11px;font-weight:700}.tabs button.active{color:var(--ink);border-bottom:3px solid var(--primary)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px;margin-top:10px}.sectionHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.sectionHeader h3{margin:0;font-size:15px}.sectionHeader small{color:var(--ink2)}.addBtn{border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700}.slotList{display:flex;flex-direction:column;gap:10px}.slotCard{border:1px solid var(--line);border-radius:14px;padding:10px;background:linear-gradient(180deg,var(--surface),var(--surface2));overflow:hidden}.slotHead{display:flex;align-items:center;gap:8px}.slotTitle{min-width:0;flex:1}.slotTitle b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slotTitle span{font-size:10.5px;color:var(--ink2)}.miniBtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center}.miniBtn svg{width:17px;height:17px}.miniBtn.delete{color:var(--danger)}
+.slotBody{display:grid;grid-template-columns:minmax(105px,150px) 1fr;gap:10px;align-items:center;margin-top:10px}.thumbWrap{background:#fff;border:1px dashed var(--line);border-radius:11px;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:82px}.thumbWrap.old{height:180px;width:58px;justify-self:center}.thumbWrap.std{aspect-ratio:8.5/5.5}.thumbWrap img{width:100%;height:100%;object-fit:cover;display:block}.emptySlot{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px dashed var(--line);border-radius:11px;padding:12px}.emptySlot .emptyIcon{width:42px;height:42px;border-radius:12px;background:rgba(169,111,37,.12);color:var(--primary);display:grid;place-items:center;flex:none}.emptySlot b{font-size:13px;display:block}.emptySlot span{font-size:11px;color:var(--ink2)}.slotActions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.actionBtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px;border-radius:10px;font-size:11px;font-weight:700}.actionBtn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.actionBtn.danger{color:var(--danger)}.replaceBtn{grid-column:1/-1}.slotInfo{font-size:10.5px;color:var(--ink2);margin-top:7px}
+.pageWrap{display:flex;flex-direction:column;align-items:center;gap:7px}.pageLabel{align-self:flex-start;font-family:var(--mono);font-size:10px;color:var(--ink2)}.pageScaler{width:100%;overflow:hidden;display:flex;justify-content:center}.a4page{position:relative;background:#fff;width:210mm;height:297mm;box-shadow:0 9px 35px rgba(0,0,0,.18);transform-origin:top center;border:1px solid #ddd}.a4-slot{position:absolute;overflow:hidden;background:#fff}.a4-slot img{width:100%;height:100%;object-fit:cover;display:block}.a4-slot.empty{border:1px dashed #d5d1c4}.a4-slot .label{position:absolute;top:3px;right:3px;background:rgba(24,35,61,.82);color:#fff;font-size:7px;padding:2px 5px;border-radius:3px;z-index:2}.a4-slot .editMark{position:absolute;bottom:3px;left:3px;background:var(--primary);color:#fff;width:19px;height:19px;border-radius:4px;display:grid;place-items:center}.a4-slot .editMark svg{width:12px;height:12px}
+.emptyPreview{padding:25px;text-align:center;color:var(--ink2);font-size:13px}.previewHint{font-size:11px;color:var(--ink2);margin-top:7px}
+.bottomBar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:var(--ink);border-top:3px solid var(--primary);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom)}.bottomBar button{border:0;background:transparent;color:#fff;padding:8px 3px 7px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px}.bottomBar svg{width:19px;height:19px}
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(5,10,20,.62);display:flex;align-items:flex-end;justify-content:center;padding:0}.modal{width:100%;max-width:720px;max-height:92vh;background:var(--surface);color:var(--ink);border-radius:20px 20px 0 0;overflow:auto;padding:8px 0 18px}.modal.center{max-height:94vh;border-radius:18px;margin:12px;max-width:900px}.handle{width:42px;height:4px;border-radius:10px;background:var(--line);margin:6px auto 10px}.modalHead{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 10px;position:sticky;top:0;background:var(--surface);z-index:2}.modalHead h3{margin:0;font-size:16px}.closeBtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);display:grid;place-items:center}.modalBody{padding:0 16px}.choiceList{display:flex;flex-direction:column;gap:8px}.choice{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface);text-align:right}.choice.active{outline:2px solid var(--primary)}.choiceIcon{width:40px;height:40px;border-radius:11px;background:rgba(169,111,37,.12);color:var(--primary);display:grid;place-items:center;flex:none}.choice b{font-size:13px}.choice small{display:block;color:var(--ink2);font-size:10.5px;margin-top:2px}.input{width:100%;height:46px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:11px;padding:0 12px;margin-top:10px}.modalActions{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin-top:12px}.modalActions button{padding:11px;border-radius:11px;border:1px solid var(--line);font-weight:700}.modalActions .ok{background:var(--primary);color:#fff;border-color:var(--primary)}
+.editorStage{background:#0c111b;border-radius:14px;display:flex;justify-content:center;align-items:center;overflow:hidden;min-height:300px;touch-action:none}.editorCanvas{position:relative;max-width:100%;line-height:0}.editorCanvas img{display:block;max-width:100%;max-height:58vh;object-fit:contain}.quadSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.handleDot{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35);touch-action:none}.editorModes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.editorModes button{padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:11px;font-weight:700}.editorModes button.active{background:var(--ink);color:#fff}.rotateRow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0}.rotateRow button{padding:8px;border:1px solid var(--line);background:var(--surface2);border-radius:10px;font-size:11px;font-weight:700}.editorNote{font-size:11px;color:var(--ink2);line-height:1.8;margin:8px 0}.sliders{display:flex;flex-direction:column;gap:10px}.sliderRow{display:grid;grid-template-columns:1fr 52px;gap:8px;align-items:center}.sliderRow .sLabel{font-size:11px;font-weight:700;display:flex;justify-content:space-between}.sliderRow input[type=range]{width:100%;accent-color:var(--primary)}.value{font-family:var(--mono);font-size:10px;color:var(--primary);text-align:left}.presets{display:flex;gap:6px;overflow:auto;padding-bottom:3px;margin:6px 0 12px}.preset{white-space:nowrap;border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:8px 10px;font-size:10.5px;font-weight:700}.preset.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.formatGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.formatGrid button,.shareGrid button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:15px 7px;font-weight:800}.shareGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}.note{margin-top:10px;background:var(--surface2);padding:11px;border-radius:11px;color:var(--ink2);font-size:10.5px;line-height:1.8}.aboutSec{padding:0 16px 14px}.aboutSec h4{margin:0 0 7px;color:var(--primary2);font-size:13px}.aboutSec p{margin:0;font-size:12.5px;line-height:1.9}.links{display:flex;flex-direction:column;gap:8px}.links a{padding:11px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--ink);background:var(--surface);font-weight:700;font-size:12px}
+.toast{position:fixed;left:50%;bottom:95px;transform:translateX(-50%);z-index:200;background:var(--ink);color:#fff;padding:10px 14px;border-radius:11px;font-size:11px;max-width:90%;box-shadow:var(--shadow);text-align:center}
+.menuList{display:flex;flex-direction:column;gap:7px;padding:0 16px}.menuList button{padding:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:11px;text-align:right;font-weight:700}.status{font-size:11px;color:var(--ink2);background:var(--surface2);padding:9px 11px;border-radius:10px;margin:0 16px 8px}.badgeUnread{width:8px;height:8px;border-radius:50%;background:#f25c54;display:inline-block;margin-inline-start:5px}
+@media(min-width:720px){body{padding-bottom:20px}.topbar{padding-left:max(18px,calc((100vw - 1080px)/2));padding-right:max(18px,calc((100vw - 1080px)/2))}.bottomBar{display:none}.container{padding:18px}.toolbar{grid-template-columns:repeat(4,1fr)}.slotList{display:grid;grid-template-columns:1fr 1fr}.panel.full{grid-column:1/-1}.modal{border-radius:18px;margin-bottom:18px}.overlay{align-items:center;padding:18px}.modal.center{margin:0}.pageWrap{max-width:560px}}
+@media(max-width:430px){.toolbar{grid-template-columns:1fr 1fr}.slotBody{grid-template-columns:100px 1fr}.thumbWrap.old{height:160px;width:54px}.brandText span{max-width:170px}.bottomBar button{font-size:9px}}
+
+.layoutTitle{margin-top:4px}.layoutChoices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.layoutChoice{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:13px;padding:11px;display:flex;align-items:center;gap:10px;text-align:right;min-height:74px}.layoutChoice b{width:34px;height:34px;border-radius:10px;background:var(--surface2);display:grid;place-items:center;flex:none}.layoutChoice span{min-width:0}.layoutChoice strong,.layoutChoice small{display:block}.layoutChoice strong{font-size:12px}.layoutChoice small{font-size:9.5px;color:var(--ink2);margin-top:2px;line-height:1.5}.layoutChoice.active{outline:2px solid var(--primary);background:rgba(169,111,37,.06)}.layoutChoice.active b{background:var(--primary);color:#fff}.subOptions{margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.subOption{border:1px solid var(--line);background:var(--surface);padding:10px;border-radius:11px;font-size:11px;font-weight:700;text-align:right}.subOption.active{background:var(--ink);color:#fff}.choiceMain{display:flex;align-items:center;gap:12px;flex:1}.choiceInsert{border:1px solid var(--primary);color:var(--primary);background:var(--surface);border-radius:9px;padding:8px 10px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:4px}.choiceInsert svg{width:15px;height:15px}.slotCard.rationAuto{min-height:0}.autoBadge{display:inline-flex;align-items:center;gap:4px;background:rgba(169,111,37,.12);color:var(--primary2);padding:3px 7px;border-radius:999px;font-size:9px}.magnetRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:9px 0}.magnetBtn{padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:11px;font-weight:800}.magnetBtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+@media(max-width:720px){.layoutChoices{grid-template-columns:1fr 1fr}.subOptions{grid-template-columns:1fr}.layoutChoice{min-height:68px}.choiceInsert{padding:8px}.slotActions{grid-template-columns:1fr 1fr}.actionBtn{min-height:42px;padding:8px 6px;font-size:10.5px}}
+@media(min-width:721px){.layoutChoices{grid-template-columns:repeat(4,1fr)}}
+.countBar{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:10px 12px;box-shadow:var(--shadow);flex-wrap:wrap}.countBar label{font-size:12px;font-weight:800}.countSelect{height:42px;min-width:86px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:10px;padding:0 10px;font-weight:800}.countBarHint{font-size:10.5px;color:var(--ink2);flex:1;min-width:180px}.slotNumber{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:8px;background:var(--surface2);color:var(--primary2);font-size:10px;font-family:var(--mono);margin-inline-end:5px}.slotHead .slotTitle b{display:flex;align-items:center;gap:4px}.slotHead .slotTitle span{display:block}.addBtn.addLimit{min-width:110px}.countBar.hidden{display:none!important}
+@media(max-width:430px){.countBar{align-items:stretch}.countBar label{width:100%}.countSelect{flex:1}.countBarHint{width:100%;min-width:0}}
+
+
+/* === LICENSE SYSTEM === */
+#licenseLock{position:fixed;inset:0;z-index:9999;background:rgba(5,10,20,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px}
+.licenseCard{width:min(520px,100%);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:22px}
+.licenseBrand{text-align:center;margin-bottom:14px}.licenseBrand b{display:block;font-size:22px}.licenseBrand span{font-size:11px;color:var(--ink2)}
+.licensePrice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.licensePrice div{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:var(--surface2)}.licensePrice b{display:block;font-size:13px}.licensePrice span{font-size:11px;color:var(--primary2)}
+.licenseActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.licenseActions button{min-height:44px;border-radius:11px;border:1px solid var(--line);font-weight:800}.licenseActions .ok{background:var(--primary);border-color:var(--primary);color:#fff}.licenseHint{font-size:10.5px;line-height:1.8;color:var(--ink2);background:var(--surface2);padding:10px;border-radius:10px;margin-top:10px}
+.licenseInput{font-family:var(--mono);direction:ltr;text-align:center;letter-spacing:1px}
+.licenseTopBtn{position:relative}.licenseStateDot{position:absolute;width:8px;height:8px;border-radius:50%;right:4px;top:4px;background:#d93025}.licenseStateDot.ok{background:#2e8b57}
+@media(max-width:430px){.trialBar{font-size:10px}.licenseCard{padding:16px}.licensePrice{grid-template-columns:1fr}.licenseActions{grid-template-columns:1fr}.licenseBrand b{font-size:19px}}
+@media print{#licenseLock,.licenseOverlayNoPrint{display:none!important}}
+
+.logoShine{filter:drop-shadow(0 0 5px rgba(246,213,156,.45));animation:logoPulse 2.8s ease-in-out infinite}@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(246,213,156,.25)) brightness(1)}50%{filter:drop-shadow(0 0 9px rgba(246,213,156,.72)) brightness(1.08)}}
+[data-theme="dark"] .modeRow button.active,[data-theme="dark"] .editorModes button.active,[data-theme="dark"] .subOption.active{background:var(--primary);color:#fff}
+.trialBar{display:none;position:relative;top:auto;z-index:49;background:linear-gradient(90deg,#8b591d,#a96f25);color:#fff;padding:6px 12px;font-size:11px;font-weight:800;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}.trialBar .trialTime{font-family:var(--mono);margin-inline-start:8px;letter-spacing:1px}
+.updatesInfo{font-size:11px;line-height:1.8;color:var(--ink2);background:var(--surface2);border-radius:11px;padding:10px}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <svg class="logo logoShine" viewBox="0 0 40 40" fill="none"><defs><linearGradient id="logoGlow" x1="5" y1="5" x2="35" y2="35"><stop offset="0" stop-color="#fff" stop-opacity=".98"/><stop offset=".45" stop-color="#F6D59C" stop-opacity=".85"/><stop offset="1" stop-color="#B8792E" stop-opacity="1"/></linearGradient><radialGradient id="logoCore"><stop offset="0" stop-color="#fff6d8"/><stop offset=".5" stop-color="#B8792E"/><stop offset="1" stop-color="#8b591d"/></radialGradient></defs><circle cx="20" cy="20" r="19" fill="#fff" opacity=".08"/><circle cx="20" cy="20" r="14" stroke="url(#logoGlow)" stroke-width="2"/><circle cx="20" cy="20" r="6.5" fill="url(#logoCore)"/><path d="M20 3 L21.6 8.2 L20 10 L18.4 8.2 Z" fill="#fff8e6"/></svg>
+    <div class="brandText"><b>Luma Pro</b><span id="versionText">v5.0 — معالجة صور المستمسكات</span></div>
+  </div>
+  <div class="topActions">
+    <button class="iconBtn licenseTopBtn" id="licenseBtn" aria-label="شراء وتفعيل البرنامج"><span id="licenseDot" class="licenseStateDot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M7 8V6a5 5 0 0 1 10 0v2"/><path d="M12 12v5"/></svg></button>
+    <button class="iconBtn" id="themeBtn" aria-label="تغيير الوضع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.56 1.56M17.51 17.51l1.56 1.56M2 12h2.2M19.8 12H22M4.93 19.07l1.56-1.56M17.51 6.49l1.56-1.56"/></svg></button>
+    <button class="iconBtn" id="menuBtn" aria-label="القائمة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+  </div>
+</div>
+<div id="trialBar" class="trialBar">الفترة التجريبية المتبقية <span class="trialTime" id="trialTime">24:00:00</span></div>
+
+<main class="container">
+  <div class="hero">
+    <div class="sectionHeader layoutTitle"><div><h3>اختر نوع العمل قبل إدراج المستمسكات</h3><small>تُرتّب الخانات تلقائياً حسب الاختيار</small></div></div>
+    <div class="layoutChoices">
+      <button class="layoutChoice active" data-layout="IDS"><b>1</b><span><strong>هويات فقط</strong><small>خمس خانات وجه وخمس خانات ظهر</small></span></button>
+      <button class="layoutChoice" data-layout="IDS_RATION"><b>2</b><span><strong>هويات مع بطاقة تموينية قديمة</strong><small>تموينية 8×27 سم مع أكثر من تخطيط</small></span></button>
+      <button class="layoutChoice" data-layout="IDS_PASSPORT"><b>3</b><span><strong>هويات مع جواز سفر</strong><small>خانتان وجه + خانتان ظهر + جواز 15×15 سم</small></span></button>
+      <button class="layoutChoice" data-layout="PASSPORT"><b>4</b><span><strong>جواز سفر فقط</strong><small>وسط الورقة 15×20 سم</small></span></button>
+    </div>
+    <div id="layoutSubOptions" class="subOptions hidden"></div>
+    <div class="modeRow"><button id="singleBtn">في وجه واحد</button><button id="doubleBtn">وجه وكفة (ورقتين)</button></div>
+    <div class="hint" id="layoutHint">اختر نوع العمل ثم اضغط «إدراج» داخل أي خانة لفتح المعرض أو مدير الملفات مباشرة، دون اختيار نوع المستمسك.</div>
+    <div class="toolbar">
+      <button class="toolBtn" id="a4TabBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg>معاينة A4</button>
+      <button class="toolBtn primary" id="saveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11z"/><path d="M7 3v5h8M8 21v-8h8v8"/></svg>حفظ</button>
+      <button class="toolBtn" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.5 10.5 7-4.3M8.5 13.5l7 4.3"/></svg>مشاركة</button>
+      <button class="toolBtn" id="printBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>طباعة</button>
+    </div>
+    <div class="tabs"><button id="editorTab" class="active">إدارة الخانات</button><button id="previewTab">معاينة ورقة A4</button></div>
+  </div>
+
+  <section id="editorView">
+    <div class="panel">
+      <div class="sectionHeader"><div><h3>الخانات — الوجه</h3><small id="rightCount">1 / 5</small></div><button class="addBtn" id="addRightBtn">＋ إدراج</button></div>
+      <div id="rightSlots" class="slotList"></div>
+    </div>
+    <div class="panel">
+      <div class="sectionHeader"><div><h3>الخانات — الظهر</h3><small id="leftCount">1 / 5</small></div><button class="addBtn" id="addLeftBtn">＋ إدراج</button></div>
+      <div id="leftSlots" class="slotList"></div>
+    </div>
+    <div id="passportPanel" class="panel hidden">
+      <div class="sectionHeader"><div><h3>جواز السفر</h3><small id="passportSizeLabel"></small></div><button class="addBtn" id="passportInsertBtn">＋ إدراج الجواز</button></div>
+      <div id="passportSlot" class="slotList"></div>
+    </div>
+    <div id="rationPanel" class="panel hidden">
+      <div class="sectionHeader"><div><h3>البطاقة التموينية القديمة</h3><small>8 × 27 سم</small></div><button class="addBtn" id="rationInsertBtn">＋ إدراج التموينية</button></div>
+      <div id="rationSlot" class="slotList"></div>
+    </div>
+    <div class="panel"><div class="sectionHeader"><h3>ملخص التخطيط</h3><small id="layoutSummary">ورقة A4 واحدة</small></div><div class="hint">الخانات الفارغة تظهر أثناء العمل فقط، ولا تُطبع ولا تظهر عند التصدير. صورك لا تُرفع إلى خادم من هذه الصفحة؛ المعالجة تتم محلياً داخل المتصفح.</div></div>
+  </section>
+
+  <section id="previewView" class="hidden">
+    <div class="panel"><div class="sectionHeader"><div><h3>المعاينة الكاملة</h3><small id="previewPagesLabel"></small></div><button class="addBtn" id="zoomResetBtn">إعادة تحجيم</button></div><div id="pagesContainer" class="pageWrap"></div><div class="previewHint">يمكن لمس الصورة داخل الخانة لفتح أدوات التعديل مباشرة.</div></div>
+  </section>
+</main>
+
+<div class="bottomBar">
+  <button id="bottomSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11z"/><path d="M8 21v-8h8v8"/></svg>حفظ</button>
+  <button id="bottomShare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.5 10.5 7-4.3M8.5 13.5l7 4.3"/></svg>مشاركة</button>
+  <button id="bottomPrint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>طباعة</button>
+</div>
+<input type="file" id="fileInput" accept="image/*" class="hidden">
+<input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(() => {
+'use strict';
+const CFG={versionCode:5,versionName:'5',githubRepo:'https://github.com/haideralhillawi-sudo/LUMA-PRO',githubApi:'https://api.github.com/repos/haideralhillawi-sudo/LUMA-PRO/releases/latest',driveFolder:'https://drive.google.com/drive/folders/1TaUCgm3DP91-C0teVqoJe2afZ_-elw_s',developer:'haider alhillawi'};
+const STD={w:8.5,h:5.5}, OLD={w:8,h:27.7};
+const TYPES_FRONT=[['UNIFIED','بطاقة موحدة','8.5 × 5.5 سم'],['RESIDENCE','بطاقة سكن','8.5 × 5.5 سم'],['RATION_NEW','بطاقة تموينية حديثة','8.5 × 5.5 سم — تبقى بقية الخانات'],['MILITARY','هوية عسكرية','8.5 × 5.5 سم'],['DRIVING','اجازة سياقة','8.5 × 5.5 سم'],['VOTER','بطاقة انتخابية','8.5 × 5.5 سم'],['OTHER','أخرى','اسم مخصص']];
+const TYPES_BACK=[['UNIFIED','بطاقة موحدة','8.5 × 5.5 سم'],['RESIDENCE','بطاقة سكن','8.5 × 5.5 سم'],['RATION_OLD','بطاقة تموينية قديمة','8 × 27.7 سم — تخفي الخانات أسفلها'],['RATION_NEW','بطاقة تموينية حديثة','8.5 × 5.5 سم — تبقى بقية الخانات'],['MILITARY','هوية عسكرية','8.5 × 5.5 سم'],['DRIVING','اجازة سياقة','8.5 × 5.5 سم'],['VOTER','بطاقة انتخابية','8.5 × 5.5 سم'],['OTHER','أخرى','اسم مخصص']];
+const PRESETS={ORIGINAL:'أصلي',DOCUMENT_BW:'مستند نصي أبيض/أسود',ENHANCED_COLOR:'ألوان فائقة الوضوح',GRAYSCALE:'تدرج رمادي'};
+const ADJ_DEFAULT={brightness:0,contrast:1,saturation:1,textContrast:0,clarity:0,shadowReduction:0,highlightReduction:0,rotationAngle:0,filterPreset:'ORIGINAL'};
+const state={mode:'SINGLE',layout:'IDS',rationPlan:'SINGLE_ALT',right:[],left:[],doubleBack:[],passport:null,rationOld:null,tab:'EDITOR',theme:localStorage.getItem('luma_theme')||'light'};
+let pendingRef=null, editorRef=null;
+const $=s=>document.querySelector(s); const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function uid(){return 'slot_'+Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function blank(side,index){return {id:uid(),side,index,type:null,customTitle:'',original:null,processed:null,nw:0,nh:0,corners:null,adjustments:{...ADJ_DEFAULT}}}
+
+
+
+/* === DEVICE LICENSE / ACTIVATION === */
+const LICENSE_PUBLIC_JWK={kty:'EC',crv:'P-256',x:'4QkUOu8AuP2vvF-xC4646umR7KYSz15JHRKSq_Bd5Yg',y:'KcptSWlsM53vig7lH4IMMny8BfM18IMlYHR6f5TWiEA'};
+const LICENSE_VERSION='LUMA-PRO-LICENSE-1';
+const LICENSE_STORAGE='luma_pro_license_v1';
+function randomDeviceCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const a=new Uint8Array(16);crypto.getRandomValues(a);let out='';for(let i=0;i<a.length;i++)out+=chars[a[i]%chars.length];return out;}
+function getDeviceCode(){let c=localStorage.getItem('luma_device_code');if(!/^[A-Z0-9]{16}$/.test(c||'')){c=randomDeviceCode();localStorage.setItem('luma_device_code',c)}return c}
+function b64uToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
+function isMobileDevice(){return /Android|webOS|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'')}
+async function importLicensePublicKey(){return crypto.subtle.importKey('jwk',LICENSE_PUBLIC_JWK,{name:'ECDSA',namedCurve:'P-256'},false,['verify'])}
+async function verifyPurchaseCode(device,code){try{const m=String(code||'').trim();const parts=m.split('.');if(parts.length!==4||parts[0]!=='LUMA1')return null;const plan=parts[1],dev=parts[2],sig=parts[3];if(dev!==device||!['WIN','AND','ALL'].includes(plan))return null;if(plan==='WIN'&&isMobileDevice())return null;if(plan==='AND'&&!isMobileDevice())return null;const key=await importLicensePublicKey();const data=new TextEncoder().encode(`${LICENSE_VERSION}|${plan}|${device}`);const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,b64uToBytes(sig),data);return ok?plan:null}catch(e){return null}}
+function licenseStored(){try{return JSON.parse(localStorage.getItem(LICENSE_STORAGE)||'null')}catch(e){return null}}
+function isActivated(){const l=licenseStored();return !!(l&&l.device===getDeviceCode()&&['WIN','AND','ALL'].includes(l.plan))}
+function setLicenseBadge(active){const d=$('#licenseDot');if(d)d.classList.toggle('ok',!!active)}
+function planLabel(plan){return plan==='WIN'?'Windows':plan==='AND'?'Android':'Android + Windows'}
+function licenseModalTemplate(){const dev=getDeviceCode();return `<div class="modalHead"><h3>تفعيل Luma Pro</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="licensePrice"><div><b>Windows</b><span>15,000 دينار</span></div><div><b>Android</b><span>15,000 دينار</span></div><div><b>Android + Windows</b><span>25,000 دينار</span></div></div><label class="inputLabel">كود الجهاز الخاص بك (16 حرفاً ورمزاً)</label><input class="input licenseInput" id="deviceCodeInput" value="${dev}" readonly><label class="inputLabel">كود الشراء</label><input class="input licenseInput" id="purchaseCodeInput" maxlength="120" placeholder="ألصق كود الشراء هنا" autocomplete="off"><div class="licenseActions"><button data-close>إلغاء</button><button class="ok" id="activatePurchase">تفعيل البرنامج</button></div><div class="licenseHint">اختر نوع الترخيص عند إصدار الكود. Windows لويندوز فقط، Android لأندرويد فقط، وAndroid + Windows للجهازين.</div></div>`}
+async function openLicenseModal(){showModal(licenseModalTemplate(),modal=>{modal.querySelector('#activatePurchase').onclick=async()=>{const btn=modal.querySelector('#activatePurchase'),code=modal.querySelector('#purchaseCodeInput').value.trim(),dev=getDeviceCode();if(!code){toast('ألصق كود الشراء أولاً');return}btn.disabled=true;btn.textContent='جاري التحقق…';try{const plan=await verifyPurchaseCode(dev,code);if(!plan){toast('كود الشراء غير صحيح أو غير مخصص لهذا الجهاز');return}localStorage.setItem(LICENSE_STORAGE,JSON.stringify({device:dev,plan,activatedAt:new Date().toISOString(),code}));setLicenseBadge(true);clearInterval(trialTimer);hideTrialBar();closeModal();hideLicenseLock();toast('تم تفعيل نسخة '+planLabel(plan)+' بنجاح')}finally{btn.disabled=false;btn.textContent='تفعيل البرنامج'}}})}
+function showLicenseLock(){if($('#licenseLock'))return;const root=document.createElement('div');root.id='licenseLock';root.innerHTML=`<div class="licenseCard"><div class="licenseBrand"><b>Luma Pro v5</b><span>انتهت الفترة التجريبية — التفعيل مطلوب</span></div><div class="licensePrice"><div><b>Windows</b><span>15,000 دينار</span></div><div><b>Android</b><span>15,000 دينار</span></div><div><b>Android + Windows</b><span>25,000 دينار</span></div></div><div class="licenseHint">اضغط زر التفعيل للحصول على كود الجهاز ثم أدخل كود الشراء الصادر لهذا الجهاز.</div><div class="licenseActions"><button id="lockActivate" class="ok">تفعيل البرنامج</button><button id="lockCopyDevice">نسخ كود الجهاز</button></div><div class="licenseHint">كود الجهاز: ${getDeviceCode()}</div></div>`;document.body.appendChild(root);$('#lockActivate').onclick=openLicenseModal;$('#lockCopyDevice').onclick=async()=>{try{await navigator.clipboard.writeText(getDeviceCode());toast('تم نسخ كود الجهاز')}catch(e){toast('كود الجهاز: '+getDeviceCode())}}}
+const TRIAL_STORAGE='luma_pro_trial_started_v1';let trialTimer=null;
+function getTrialStart(){let t=Number(localStorage.getItem(TRIAL_STORAGE));if(!Number.isFinite(t)||t<=0){t=Date.now();localStorage.setItem(TRIAL_STORAGE,String(t))}return t}
+function getTrialRemaining(){return Math.max(0,(24*60*60*1000)-(Date.now()-getTrialStart()))}
+function hideTrialBar(){const b=$('#trialBar');if(b)b.style.display='none'}
+function showTrialBar(){const b=$('#trialBar');if(!b)return;b.style.display='block';const tick=()=>{const ms=getTrialRemaining();if(ms<=0){b.style.display='none';if(trialTimer)clearInterval(trialTimer);enforceLicense();return}const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);$('#trialTime').textContent=[h,m,s].map(v=>String(v).padStart(2,'0')).join(':')};tick();if(trialTimer)clearInterval(trialTimer);trialTimer=setInterval(tick,1000)}
+function enforceLicense(){const active=isActivated();setLicenseBadge(active);if(active){hideTrialBar();hideLicenseLock();return true}if(getTrialRemaining()>0){hideLicenseLock();showTrialBar();return true}hideTrialBar();showLicenseLock();return false}
+function hideLicenseLock(){const el=$('#licenseLock');if(el)el.remove()}
+
+document.documentElement.dataset.theme=state.theme==='dark'?'dark':'light';
+function toast(msg,ms=2400){const r=$('#toastRoot');r.innerHTML=`<div class="toast">${esc(msg)}</div>`;setTimeout(()=>r.innerHTML='',ms)}
+function icon(name){const m={plus:'<path d="M12 5v14M5 12h14"/>',edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',trash:'<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 14h10l1-14M9 7V4h6v3"/>',camera:'<path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/>',crop:'<path d="M6 3v12a3 3 0 0 0 3 3h12"/><path d="M3 6h12a3 3 0 0 1 3 3v12"/>',tune:'<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="17" r="2"/>'};return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${m[name]||m.plus}</svg>`}
+function visibleLeft(){const old=state.left.find(s=>s.type==='RATION_OLD');if(!old)return state.left;const i=state.left.indexOf(old);return state.left.slice(0,i+1)}
+function getSlot(ref){return state[ref.side==='FRONT'?'right':'left'].find(s=>s.id===ref.id)}
+function getRef(slot){return {side:slot.side,id:slot.id}}
+function normalizeIndexes(){state.right.forEach((s,i)=>s.index=i);state.left.forEach((s,i)=>s.index=i)}
+function setMode(m){state.mode=m;render();saveSession()}
+function render(){normalizeIndexes();updateLayoutUI();$('#singleBtn').classList.toggle('active',state.mode==='SINGLE');$('#doubleBtn').classList.toggle('active',state.mode==='DOUBLE');let summary='';if(state.layout==='IDS')summary=state.mode==='SINGLE'?'هويات فقط — وجه وظهر في ورقة واحدة':'هويات فقط — وجه ثم ظهر في ورقتين';else if(state.layout==='IDS_RATION')summary=state.rationPlan==='SINGLE_ALT'?'تموينية قديمة + 4 خانات متبادلة':state.rationPlan==='SINGLE_FRONT_RATION'?'5 وجه + تموينية قديمة':'5 وجه + 5 ظهر + تموينية حسب التخطيط';else if(state.layout==='IDS_PASSPORT')summary='هويات + جواز سفر 15×15 سم';else summary='جواز سفر 15×20 سم';$('#layoutSummary').textContent=summary;$('#editorView').classList.toggle('hidden',state.tab!=='EDITOR');$('#previewView').classList.toggle('hidden',state.tab!=='PREVIEW');renderSlots('FRONT');renderSlots('BACK');renderPages();updateCounts();}
+function updateCounts(){const rc=state.right.length,lc=state.left.length;$('#rightCount').textContent=`${rc} / 5`;$('#leftCount').textContent=`${lc} / 5`;$('#addRightBtn').disabled=rc>=5||state.layout==='PASSPORT';$('#addLeftBtn').disabled=lc>=5||state.layout==='PASSPORT'||(state.layout==='IDS_RATION'&&state.rationPlan!=='FRONT_RATION_SECOND'&&state.left.some(s=>s.type==='RATION_OLD'||s.role==='rationOld'));}
+function slotCard(slot){const isOld=slot.type==='RATION_OLD';const title=slot.customTitle||docName(slot.type)|| (slot.side==='FRONT'?`وجه المستمسك (${slot.index+1})`:`ظهر المستمسك (${slot.index+1})`);const meta=isOld?'8 × 27.7 سم':`${STD.w} × ${STD.h} سم`;if(slot.original){return `<article class="slotCard"><div class="slotHead"><div class="slotTitle"><b>${esc(title)}</b><span>${esc(meta)}</span></div><button class="miniBtn" data-act="type" data-side="${slot.side}" data-id="${slot.id}">☷</button><button class="miniBtn delete" data-act="remove" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div><div class="slotBody"><div class="thumbWrap ${isOld?'old':'std'}"><img src="${slot.processed||slot.original}" alt="${esc(title)}"></div><div><div class="slotActions"><button class="actionBtn primary" data-act="crop" data-side="${slot.side}" data-id="${slot.id}">${icon('crop')} قص وتصحيح</button><button class="actionBtn" data-act="adjust" data-side="${slot.side}" data-id="${slot.id}">${icon('tune')} معالجة وتوضيح</button><button class="actionBtn replaceBtn" data-act="replace" data-side="${slot.side}" data-id="${slot.id}">تبديل الصورة</button><button class="actionBtn danger" data-act="clear" data-side="${slot.side}" data-id="${slot.id}">إفراغ الصورة</button></div><div class="slotInfo">الصورة الأصلية محفوظة محلياً، ويمكن إعادة التعديل في أي وقت.</div></div></div></article>`}
+return `<article class="slotCard"><div class="slotHead"><div class="slotTitle"><b>${esc(title)}</b><span>${esc(meta)}</span></div><button class="miniBtn" data-act="type" data-side="${slot.side}" data-id="${slot.id}">☷</button><button class="miniBtn delete" data-act="remove" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div><button class="emptySlot" data-act="type" data-side="${slot.side}" data-id="${slot.id}"><span class="emptyIcon">${icon('plus')}</span><span><b>إدراج صورة المستمسك</b><span>اختر نوع المستمسك ثم الصورة أو الكاميرا</span></span></button></article>`}
+function renderSlots(side){const arr=side==='FRONT'?state.right:visibleLeft();const root=side==='FRONT'?$('#rightSlots'):$('#leftSlots');root.innerHTML=arr.map(slotCard).join('');[...root.querySelectorAll('[data-act]')].forEach(b=>b.onclick=handleSlotAction)}
+function handleSlotAction(e){const b=e.currentTarget,side=b.dataset.side,id=b.dataset.id,slot=(side==='FRONT'?state.right:state.left).find(s=>s.id===id),act=b.dataset.act;if(!slot)return;if(act==='type')openTypeModal(slot);if(act==='remove')removeSlot(slot);if(act==='crop')openEditor(slot,'crop');if(act==='adjust')openEditor(slot,'adjust');if(act==='replace')pickFile(slot,false);if(act==='clear')clearSlot(slot)}
+function addSlot(side){const arr=side==='FRONT'?state.right:state.left;if(arr.length>=5||state.left.some(s=>s.type==='RATION_OLD')&&side==='BACK')return;arr.push(blank(side,arr.length));render();saveSession()}
+function removeSlot(slot){const arr=slot.side==='FRONT'?state.right:state.left;if(arr.length<=1){toast('يجب إبقاء خانة واحدة على الأقل');return}const i=arr.findIndex(s=>s.id===slot.id);arr.splice(i,1);render();saveSession()}
+function clearSlot(slot){Object.assign(slot,blank(slot.side,slot.index));slot.id=uid();render();saveSession();toast('تم إفراغ الخانة')}
+function docName(type){const map={UNIFIED:'بطاقة موحدة',RESIDENCE:'بطاقة سكن',RATION_NEW:'بطاقة تموينية حديثة',RATION_OLD:'بطاقة تموينية قديمة',MILITARY:'هوية عسكرية',DRIVING:'اجازة سياقة',VOTER:'بطاقة انتخابية',OTHER:'أخرى'};return map[type]||''}
+function typeList(slot){return slot.side==='FRONT'?TYPES_FRONT:TYPES_BACK}
+function openTypeModal(slot){pendingRef=getRef(slot);let custom=slot.customTitle||'';const options=typeList(slot).map(([key,name,desc])=>`<div class="choice" data-type="${key}"><div class="choiceMain"><span class="choiceIcon">${icon('plus')}</span><span class="choiceText"><b>${esc(name)}</b><small>${esc(desc)}</small></span></div><button type="button" class="choiceInsert" data-insert-type="${key}">${icon('plus')} إدراج</button></div>`).join('');showModal(`
+<div class="modalHead"><h3>اختر نوع المستمسك</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="choiceList">${options}</div><input class="input" id="customNameInput" placeholder="اكتب اسم المستمسك المخصص عند اختيار «أخرى»" value="${esc(custom)}"><div class="note">زر «إدراج» أمام كل نوع يفتح المعرض/مدير الملفات مباشرة على الهاتف أو ويندوز.</div><div class="modalActions"><button data-close>إلغاء</button><button class="ok" id="typeConfirm">اختيار ثم إدراج صورة</button></div></div>`,modal=>{let chosen=slot.type;modal.querySelectorAll('.choice').forEach(c=>{const key=c.dataset.type;const select=()=>{modal.querySelectorAll('.choice').forEach(x=>x.classList.remove('active'));c.classList.add('active');chosen=key};c.querySelector('.choiceText').onclick=select;c.onclick=e=>{if(e.target.closest('.choiceInsert'))return;select()};c.querySelector('.choiceInsert').onclick=e=>{e.stopPropagation();chosen=key;if(key==='OTHER')slot.customTitle=modal.querySelector('#customNameInput').value.trim()||'مستمسك آخر';else slot.customTitle=docName(key);slot.type=key;closeModal();render();saveSession();pickFile(slot,false)}});modal.querySelector('#typeConfirm').onclick=()=>{if(!chosen){toast('اختر نوع المستمسك أولاً');return}slot.type=chosen;if(chosen==='OTHER')slot.customTitle=modal.querySelector('#customNameInput').value.trim()||'مستمسك آخر';else slot.customTitle=docName(chosen);closeModal();render();saveSession();pickFile(slot,false)}},'sheet')}
+function pickFile(slot,camera){pendingRef=getRef(slot);(camera?$('#cameraInput'):$('#fileInput')).click()}
+function onFile(file){if(!file||!pendingRef)return;const slot=getSlot(pendingRef);if(!slot)return;const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{slot.original=ev.target.result;slot.processed=slot.original;slot.nw=img.naturalWidth;slot.nh=img.naturalHeight;slot.corners=defaultCoverCorners(img.naturalWidth,img.naturalHeight,ratioForSlot(slot));render();saveSession();toast('تم إدراج الصورة')};img.src=ev.target.result};r.readAsDataURL(file)}
+$('#fileInput').onchange=e=>{onFile(e.target.files[0]);e.target.value=''};$('#cameraInput').onchange=e=>{onFile(e.target.files[0]);e.target.value=''};
+function ratioForSlot(slot){const d=slot.type==='RATION_OLD'?OLD:STD;return d.w/d.h}
+function defaultCoverCorners(w,h,ratio){let cw,ch,x,y;if(w/h>ratio){ch=h;cw=h*ratio;x=(w-cw)/2;y=0}else{cw=w;ch=w/ratio;x=0;y=(h-ch)/2}return[{x,y},{x:x+cw,y},{x:x+cw,y:y+ch},{x,y:y+ch}]}
+function openEditor(slot,tab='crop'){editorRef=getRef(slot);const isOld=slot.type==='RATION_OLD';const ad={...ADJ_DEFAULT,...slot.adjustments};const c=slot.corners||defaultCoverCorners(slot.nw,slot.nh,ratioForSlot(slot));const model=`<div class="modal center"><div class="handle"></div><div class="modalHead"><h3>تعديل الصورة</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="editorStage"><div class="editorCanvas" id="editorCanvas"><img id="editorImg" src="${slot.original}" alt=""><svg class="quadSvg" id="quadSvg" viewBox="0 0 1 1" preserveAspectRatio="none"><polygon id="quadPoly" points="" fill="rgba(169,111,37,.18)" stroke="#B8792E" stroke-width=".008"/></svg><div class="handleDot" data-i="0"></div><div class="handleDot" data-i="1"></div><div class="handleDot" data-i="2"></div><div class="handleDot" data-i="3"></div></div></div><div class="editorModes"><button id="perspTab" class="active">تصحيح الزوايا / منظور</button><button id="rectTab">قص مستطيل 90°</button></div><div class="rotateRow"><button data-rot="0">0°</button><button data-rot="90">↻ 90°</button><button data-rot="180">180°</button><button data-rot="270">↺ 90°</button></div><div class="magnetRow"><button class="magnetBtn" id="magneticCrop">🧲 قص مغناطيسي</button><button class="magnetBtn" id="freeCorners">↘ تحكم حر بالزوايا</button></div><div class="editorNote">اسحب النقاط الأربع لتحديد زوايا المستمسك. في وضع المستطيل يتم استخدام منطقة قص 90°، وفي وضع المنظور يتم تصحيح الميلان تلقائياً إلى مستطيل.</div><div class="panel" style="margin-top:8px"><div class="sectionHeader"><h3>فلاتر جاهزة</h3><button class="addBtn" id="resetEdit">إعادة ضبط</button></div><div class="presets">${Object.entries(PRESETS).map(([k,v])=>`<button class="preset ${ad.filterPreset===k?'active':''}" data-preset="${k}">${v}</button>`).join('')}</div><div class="sliders">${sliderRow('brightness','الإضاءة',-100,100,ad.brightness)}${sliderRow('contrast','التباين',0.5,2.2,ad.contrast,.1)}${sliderRow('textContrast','تباين النص',0,100,ad.textContrast)}${sliderRow('shadowReduction','تقليل الظل',0,100,ad.shadowReduction)}${sliderRow('highlightReduction','تقليل الوهج',0,100,ad.highlightReduction)}${sliderRow('clarity','توضيح / Clarity',0,100,ad.clarity)}${sliderRow('saturation','التشبع',0,2,ad.saturation,.1)}</div></div><div class="modalActions"><button data-close>إلغاء</button><button class="ok" id="applyEdit">حفظ التعديلات</button></div></div></div>`;showModal(model,modal=>setupEditor(modal,slot,c,ad,tab),'center')}
+function sliderRow(key,label,min,max,val,step=1){return `<div class="sliderRow"><div><div class="sLabel"><span>${label}</span><span class="value" id="val_${key}">${fmtVal(val,key)}</span></div><input id="sl_${key}" type="range" min="${min}" max="${max}" step="${step}" value="${val}"></div></div>`}
+function fmtVal(v,k){return k==='contrast'||k==='saturation'?Number(v).toFixed(1):String(Math.round(v))}
+function setupEditor(modal,slot,corners,adj,tab){let mode='PERSPECTIVE';const img=modal.querySelector('#editorImg'), canvas=modal.querySelector('#editorCanvas'), poly=modal.querySelector('#quadPoly'),dots=[...modal.querySelectorAll('.handleDot')];let work=corners.map(p=>({u:p.x/slot.nw,v:p.y/slot.nh}));function layout(){const r=canvas.getBoundingClientRect();dots.forEach((d,i)=>{d.style.left=(work[i].u*r.width)+'px';d.style.top=(work[i].v*r.height)+'px'});poly.setAttribute('points',work.map(p=>`${p.u},${p.v}`).join(' '))}function init(){layout();dots.forEach((dot,i)=>{let down=false;dot.onpointerdown=e=>{down=true;dot.setPointerCapture(e.pointerId);e.preventDefault()};dot.onpointermove=e=>{if(!down)return;const r=canvas.getBoundingClientRect();work[i].u=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));work[i].v=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));layout()};dot.onpointerup=()=>down=false});}
+img.onload=init;if(img.complete)init();modal.querySelector('#perspTab').onclick=()=>{mode='PERSPECTIVE';modal.querySelector('#perspTab').classList.add('active');modal.querySelector('#rectTab').classList.remove('active')};modal.querySelector('#rectTab').onclick=()=>{mode='RECT';modal.querySelector('#rectTab').classList.add('active');modal.querySelector('#perspTab').classList.remove('active')};modal.querySelectorAll('[data-rot]').forEach(b=>b.onclick=()=>{adj.rotationAngle=Number(b.dataset.rot);refreshPreviewCss(img,adj)});modal.querySelectorAll('input[type=range]').forEach(input=>{const key=input.id.replace('sl_','');input.oninput=()=>{adj[key]=Number(input.value);modal.querySelector('#val_'+key).textContent=fmtVal(adj[key],key);refreshPreviewCss(img,adj)}});modal.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{adj.filterPreset=b.dataset.preset;modal.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x===b));applyPresetToSliders(modal,adj);refreshPreviewCss(img,adj)});modal.querySelector('#resetEdit').onclick=()=>{adj={...ADJ_DEFAULT};work=defaultCoverCorners(slot.nw,slot.nh,ratioForSlot(slot)).map(p=>({u:p.x/slot.nw,v:p.y/slot.nh}));modal.querySelectorAll('input[type=range]').forEach(i=>{const k=i.id.replace('sl_','');i.value=adj[k]});modal.querySelectorAll('.value').forEach(el=>{const k=el.id.replace('val_','');el.textContent=fmtVal(adj[k],k)});modal.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x.dataset.preset===adj.filterPreset));refreshPreviewCss(img,adj);layout()};modal.querySelector('#freeCorners').onclick=()=>{mode='PERSPECTIVE';modal.querySelector('#perspTab').classList.add('active');modal.querySelector('#rectTab').classList.remove('active');toast('الزوايا أصبحت قابلة للتحريك بحرية من الاتجاهات الأربعة')};modal.querySelector('#magneticCrop').onclick=async()=>{work=await magneticSnapCorners(slot,work);layout();toast('تم التقاط الحواف المغناطيسية — ويمكن تعديل كل زاوية يدوياً')};modal.querySelector('#applyEdit').onclick=async()=>{let pts;if(mode==='RECT'){const u1=Math.min(work[0].u,work[2].u),v1=Math.min(work[0].v,work[2].v),u2=Math.max(work[0].u,work[2].u),v2=Math.max(work[0].v,work[2].v);pts=[{x:u1*slot.nw,y:v1*slot.nh},{x:u2*slot.nw,y:v1*slot.nh},{x:u2*slot.nw,y:v2*slot.nh},{x:u1*slot.nw,y:v2*slot.nh}]}else{pts=work.map(p=>({x:p.u*slot.nw,y:p.v*slot.nh}))}slot.corners=pts;slot.adjustments={...adj};slot.processed=await processSlotData(slot);closeModal();render();saveSession();toast('تم حفظ التعديلات')};refreshPreviewCss(img,adj)}
+function applyPresetToSliders(modal,adj){const p=adj.filterPreset;if(p==='ORIGINAL')Object.assign(adj,{brightness:0,contrast:1,saturation:1,textContrast:0,clarity:0,shadowReduction:0,highlightReduction:0});if(p==='DOCUMENT_BW')Object.assign(adj,{brightness:8,contrast:1.25,saturation:0,textContrast:70,clarity:35,shadowReduction:15,highlightReduction:10});if(p==='ENHANCED_COLOR')Object.assign(adj,{brightness:4,contrast:1.2,saturation:1.35,textContrast:10,clarity:30,shadowReduction:10,highlightReduction:8});if(p==='GRAYSCALE')Object.assign(adj,{brightness:2,contrast:1.1,saturation:0,textContrast:15,clarity:12,shadowReduction:8,highlightReduction:8});['brightness','contrast','textContrast','shadowReduction','highlightReduction','clarity','saturation'].forEach(k=>{const i=modal.querySelector('#sl_'+k);if(i)i.value=adj[k];const v=modal.querySelector('#val_'+k);if(v)v.textContent=fmtVal(adj[k],k)})}
+function refreshPreviewCss(img,adj){img.style.filter=`brightness(${1+adj.brightness/100}) contrast(${adj.contrast}) saturate(${adj.saturation}) grayscale(${adj.filterPreset==='GRAYSCALE'||adj.saturation===0?'1':'0'})`;img.style.transform=`rotate(${adj.rotationAngle}deg)`}
+async function magneticSnapCorners(slot,work){try{const c=document.createElement('canvas'),ctx=c.getContext('2d',{willReadFrequently:true});const w=slot.nw,h=slot.nh;c.width=Math.min(w,900);c.height=Math.max(1,Math.round(c.width*h/w));const im=await loadImage(slot.original);ctx.drawImage(im,0,0,c.width,c.height);const data=ctx.getImageData(0,0,c.width,c.height).data;const gray=(x,y)=>{x=Math.max(1,Math.min(c.width-2,x));y=Math.max(1,Math.min(c.height-2,y));const i=(y*c.width+x)*4;return .299*data[i]+.587*data[i+1]+.114*data[i+2]};const out=work.map(p=>({...p}));const r=36;out.forEach(p=>{const cx=Math.round(p.u*c.width),cy=Math.round(p.v*c.height);let best=-Infinity,bx=cx,by=cy;for(let yy=Math.max(1,cy-r);yy<=Math.min(c.height-2,cy+r);yy+=2)for(let xx=Math.max(1,cx-r);xx<=Math.min(c.width-2,cx+r);xx+=2){const score=Math.abs(gray(xx+1,yy)-gray(xx-1,yy))+Math.abs(gray(xx,yy+1)-gray(xx,yy-1));const dist=Math.hypot(xx-cx,yy-cy);const val=score-dist*.35;if(val>best){best=val;bx=xx;by=yy}}p.u=bx/c.width;p.v=by/c.height});return out}catch(e){return work}}
+
+async function processSlotData(slot){const img=await loadImage(slot.original);let source=img;let rot=Number(slot.adjustments.rotationAngle||0);if(rot)source=rotateImage(img,rot);let corners=slot.corners||defaultCoverCorners(source.naturalWidth,source.naturalHeight,ratioForSlot(slot));if(rot)corners=defaultCoverCorners(source.naturalWidth,source.naturalHeight,ratioForSlot(slot));const target=slot.type==='RATION_OLD'?OLD:STD;const canvas=warpImageToRect(source,corners,Math.round(target.w*28),Math.round(target.h*28));applyPixelAdjustments(canvas,slot.adjustments);return canvas.toDataURL('image/jpeg',.94)}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+function rotateImage(img,degs){const r=((degs%360)+360)%360,c=document.createElement('canvas'),swap=r===90||r===270;c.width=swap?img.naturalHeight:img.naturalWidth;c.height=swap?img.naturalWidth:img.naturalHeight;const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(r*Math.PI/180);x.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);const o=new Image();o.src=c.toDataURL('image/png');return o}
+function warpImageToRect(img,corners,dw,dh){const sc=document.createElement('canvas');sc.width=img.naturalWidth;sc.height=img.naturalHeight;const s=sc.getContext('2d');s.drawImage(img,0,0);const sd=s.getImageData(0,0,sc.width,sc.height).data,co=computeQuadCoeffs(corners),dc=document.createElement('canvas');dc.width=dw;dc.height=dh;const ctx=dc.getContext('2d'),dd=ctx.createImageData(dw,dh).data;for(let py=0;py<dh;py++){const v=py/dh;for(let px=0;px<dw;px++){const u=px/dw,den=co.g*u+co.h*v+1,sx=(co.a*u+co.b*v+co.c)/den,sy=(co.d*u+co.e*v+co.f)/den,di=(py*dw+px)*4;if(sx<0||sy<0||sx>=sc.width-1||sy>=sc.height-1){dd[di]=255;dd[di+1]=255;dd[di+2]=255;dd[di+3]=255;continue}const x0=Math.floor(sx),y0=Math.floor(sy),x1=x0+1,y1=y0+1,fx=sx-x0,fy=sy-y0;for(let ch=0;ch<4;ch++){const p00=sd[(y0*sc.width+x0)*4+ch],p10=sd[(y0*sc.width+x1)*4+ch],p01=sd[(y1*sc.width+x0)*4+ch],p11=sd[(y1*sc.width+x1)*4+ch];const top=p00+(p10-p00)*fx,bot=p01+(p11-p01)*fx;dd[di+ch]=top+(bot-top)*fy}}}ctx.putImageData(new Uint8ClampedArray(dd),0,0);return dc}
+function computeQuadCoeffs(c){const [p0,p1,p2,p3]=c,X0=p0.x,Y0=p0.y,X1=p1.x,Y1=p1.y,X2=p2.x,Y2=p2.y,X3=p3.x,Y3=p3.y,dx1=X1-X2,dx2=X3-X2,dx3=X0-X1+X2-X3,dy1=Y1-Y2,dy2=Y3-Y2,dy3=Y0-Y1+Y2-Y3;let a,b,d,e,g,h;if(Math.abs(dx3)<1e-9&&Math.abs(dy3)<1e-9){a=X1-X0;b=X2-X1;d=Y1-Y0;e=Y2-Y1;g=0;h=0}else{const den=dx1*dy2-dx2*dy1;g=(dx3*dy2-dx2*dy3)/den;h=(dx1*dy3-dx3*dy1)/den;a=X1-X0+g*X1;b=X3-X0+h*X3;d=Y1-Y0+g*Y1;e=Y3-Y0+h*Y3}return{a,b,c:X0,d,e,f:Y0,g,h}}
+function applyPixelAdjustments(canvas,adj){const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,img=ctx.getImageData(0,0,w,h),d=img.data;let blur=null;if(adj.clarity>0){const bc=document.createElement('canvas');bc.width=w;bc.height=h;const bx=bc.getContext('2d');bx.filter='blur(2px)';bx.drawImage(canvas,0,0);blur=bx.getImageData(0,0,w,h).data}const br=adj.brightness*2.55,cf=(259*((adj.contrast-1)*255+255))/(255*(259-(adj.contrast-1)*255)),tc=1+adj.textContrast/100,sat=adj.saturation,filter=adj.filterPreset;for(let i=0;i<d.length;i+=4){let r=d[i],g=d[i+1],b=d[i+2],lum=.299*r+.587*g+.114*b;if(adj.shadowReduction&&lum<128){const wgt=(128-lum)/128,add=adj.shadowReduction*2.2*wgt;r+=add;g+=add;b+=add}if(adj.highlightReduction&&lum>128){const wgt=(lum-128)/128,sub=adj.highlightReduction*2.2*wgt;r-=sub;g-=sub;b-=sub}r+=br;g+=br;b+=br;r=cf*(r-128)+128;g=cf*(g-128)+128;b=cf*(b-128)+128;const gr=.299*r+.587*g+.114*b;r=gr+(r-gr)*sat;g=gr+(g-gr)*sat;b=gr+(b-gr)*sat;if(blur){const amt=adj.clarity/100*1.4;r+=(r-blur[i])*amt;g+=(g-blur[i+1])*amt;b+=(b-blur[i+2])*amt}if(adj.textContrast){r=128+(r-128)*tc;g=128+(g-128)*tc;b=128+(b-128)*tc}if(filter==='DOCUMENT_BW'){const q=.299*r+.587*g+.114*b;const bw=q>145?255:q<95?0:q;r=bw;g=bw;b=bw}else if(filter==='GRAYSCALE'){const q=.299*r+.587*g+.114*b;r=g=b=q}d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b))}ctx.putImageData(img,0,0)}
+
+function layoutPositions(){const pages=[];if(state.layout==='PASSPORT'){pages.push({right:[],left:[],passportOnly:true,passport:state.passport});return pages}if(state.layout==='IDS_PASSPORT'){pages.push({right:state.right,left:state.left,passportMode:true,passport:state.passport});return pages}if(state.layout==='IDS'){if(state.mode==='DOUBLE'){pages.push({right:state.right,left:[]});pages.push({right:[],left:state.left})}else pages.push({right:state.right,left:state.left});return pages}if(state.layout==='IDS_RATION'){if(state.rationPlan==='SINGLE_ALT')pages.push({right:state.right,left:state.left});else if(state.rationPlan==='SINGLE_FRONT_RATION')pages.push({right:state.right,left:state.left});else if(state.rationPlan==='FRONT_RATION_SECOND'){pages.push({right:state.right,left:state.left});pages.push({right:[],left:state.rationOld?[state.rationOld]:[]})}else if(state.rationPlan==='DOUBLE_RATION'){pages.push({right:state.right,left:state.left});pages.push({right:[],left:state.doubleBack})}return pages}return pages}
+function buildA4(a4,page,pi){const top=6,left=8,slotW=85,slotH=55,rowGap=2,rightX=210-8-slotW,leftX=8;const add=(slot,x,y,w,h)=>{const box=document.createElement('div');box.className='a4-slot'+(slot.original?'':' empty');box.style.left=cm(x);box.style.top=cm(y);box.style.width=cm(w);box.style.height=cm(h);if(slot.original){const img=document.createElement('img');img.src=slot.processed||slot.original;box.appendChild(img);box.innerHTML+=`<div class="label">${esc(slot.customTitle||docName(slot.type)||'المستمسك')}</div><div class="editMark">${icon('edit')}</div>`;box.onclick=()=>openEditor(slot,'adjust')}else box.innerHTML='<div class="label">إدراج</div>';a4.appendChild(box)};
+if(page.right&&page.right.length){page.right.forEach((s,i)=>add(s,rightX,top+i*(slotH+rowGap),slotW,slotH))}
+if(page.left&&page.left.length){const old=page.left.find(s=>s.type==='RATION_OLD');if(old){const idx=page.left.indexOf(old);page.left.slice(0,idx).forEach((s,i)=>add(s,leftX,top+i*(slotH+rowGap),slotW,slotH));add(old,leftX,top+idx*(slotH+rowGap),80,277)}else page.left.forEach((s,i)=>add(s,leftX,top+i*(slotH+rowGap),slotW,slotH))}
+}
+function fitPage(scaler,page){requestAnimationFrame(()=>{const cw=Math.max(1,scaler.clientWidth||document.documentElement.clientWidth||330);const pw=page.offsetWidth||794;const ph=page.offsetHeight||1123;const scale=Math.min(1,cw/pw);page.style.transform=`scale(${scale})`;scaler.style.height=`${Math.ceil(ph*scale)}px`;scaler.style.width='100%'})}
+window.addEventListener('resize',()=>document.querySelectorAll('.pageScaler').forEach(s=>{const p=s.querySelector('.a4page');if(p)fitPage(s,p)}));
+
+function showModal(html,setup,kind='sheet'){const root=$('#modalRoot');root.innerHTML=`<div class="overlay"><div class="modal ${kind==='center'?'center':''}">${html}</div></div>`;const overlay=root.firstElementChild,modal=overlay.querySelector('.modal');modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);overlay.onclick=e=>{if(e.target===overlay)closeModal()};if(setup)setup(modal)}
+function closeModal(){$('#modalRoot').innerHTML='';document.body.classList.remove('no-scroll')}
+
+function openFormat(mode){if(mode==='save'){showModal(`<div class="handle"></div><div class="modalHead"><h3>اختر صيغة الحفظ</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="formatGrid"><button data-format="pdf">PDF<br><small>ورقة جاهزة للطباعة</small></button><button data-format="png">PNG<br><small>أعلى وضوح</small></button><button data-format="jpg">JPG<br><small>حجم مناسب للمشاركة</small></button></div><div class="note">يتم إنشاء الملفات داخل جهازك من خلال المتصفح مباشرة.</div></div>`,modal=>{modal.querySelectorAll('[data-format]').forEach(b=>b.onclick=async()=>{closeModal();await exportFormat(b.dataset.format)})});return}
+showModal(`<div class="handle"></div><div class="modalHead"><h3>مشاركة</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="shareGrid"><button id="systemShare">نظام المشاركة<br><small>واتساب وتيليجرام وغيرها</small></button><button id="waShare">واتساب</button><button id="tgShare">تيليجرام</button><button id="driveShare">Google Drive</button></div><div class="note">نظام المشاركة يحاول إرفاق ملفات المعاملة مباشرة. أزرار الخدمات الأخرى تفتح التطبيق/الموقع لتختار الملف من التنزيلات عند الحاجة.</div></div>`,modal=>{modal.querySelector('#systemShare').onclick=async()=>{closeModal();const ok=await shareFiles();if(!ok)toast('المشاركة المباشرة غير مدعومة في هذا المتصفح. احفظ الملف ثم أرفقه يدوياً.')};modal.querySelector('#waShare').onclick=()=>window.open('https://wa.me/','_blank');modal.querySelector('#tgShare').onclick=()=>window.open('https://t.me/share/url','_blank');modal.querySelector('#driveShare').onclick=()=>window.open('https://drive.google.com/drive/my-drive','_blank')})}
+async function renderCanvases(){const pages=document.querySelectorAll('#pagesContainer .a4page');const out=[];for(const p of pages){const prev=p.style.transform;p.style.transform='none';const c=await html2canvas(p,{scale:2.2,useCORS:true,backgroundColor:'#fff'});p.style.transform=prev;out.push(c)}return out}
+function dataUrlDownload(url,name){const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove()}
+async function exportFormat(format){renderPages();const cvs=await renderCanvases();if(format==='pdf'){const{jsPDF}=window.jspdf,pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});cvs.forEach((c,i)=>{if(i)pdf.addPage('a4','p');pdf.addImage(c.toDataURL('image/jpeg',.94),'JPEG',0,0,210,297)});pdf.save('luma-pro-mostamsakat.pdf');toast('تم إنشاء ملف PDF')}else cvs.forEach((c,i)=>dataUrlDownload(c.toDataURL(format==='png'?'image/png':'image/jpeg',.95),`luma-pro-page-${i+1}.${format}`));if(format!=='pdf')toast('تم حفظ الصور')}
+async function shareFiles(){renderPages();const cvs=await renderCanvases();const files=[];for(let i=0;i<cvs.length;i++){const blob=await new Promise(r=>cvs[i].toBlob(r,'image/jpeg',.93));files.push(new File([blob],`luma-pro-page-${i+1}.jpg`,{type:'image/jpeg'}))}if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:'Luma Pro'});return true}catch(e){return false}}return false}
+async function doPrint(){
+  state.tab='PREVIEW';
+  render();
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  try{
+    const cvs=await renderCanvases();
+    const pagesHtml=cvs.map((c,i)=>`<section class="printPage"><img src="${c.toDataURL('image/jpeg',.96)}" alt="Luma Pro A4 ${i+1}"></section>`).join('');
+    const w=window.open('','_blank');
+    if(w){
+      w.document.open();
+      w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Luma Pro — معاينة الطباعة</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.printPage{width:210mm;height:297mm;page-break-after:always;break-after:page;overflow:hidden;background:#fff}.printPage:last-child{page-break-after:auto;break-after:auto}.printPage img{display:block;width:210mm;height:297mm;object-fit:fill;margin:0;padding:0}</style></head><body>${pagesHtml}</body></html>`);
+      w.document.close();
+      const imgs=[...w.document.images];
+      await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=img.onerror=()=>res()})));
+      setTimeout(()=>{try{w.focus();w.print()}catch(e){try{w.close()}catch(_){}}},160);
+      toast('تم فتح معاينة الطباعة بحجم A4');
+      return;
+    }
+  }catch(e){console.error('Print preview error',e)}
+  // بديل للمتصفحات التي تمنع فتح نافذة جديدة: نطبع المعاينة الحالية فقط.
+  try{window.print()}catch(e){toast('تعذر فتح معاينة الطباعة في هذا المتصفح')}
+}
+
+
+
+/* === LAYOUT/INSERTION EXTENSIONS === */
+function makeInsertSlot(side,index,type=null,role='identity'){const x=blank(side,index);x.type=type;x.role=role;return x}
+function resetSlotsForLayout(){
+  const mk=(side,n,type=null,role='identity')=>Array.from({length:n},(_,i)=>makeInsertSlot(side,i,type,role));
+  state.doubleBack=[];state.passport=null;state.rationOld=null;
+  if(state.layout==='IDS'){state.right=mk('FRONT',5);state.left=mk('BACK',5);}
+  else if(state.layout==='IDS_RATION'){
+    if(state.rationPlan==='SINGLE_ALT'){state.right=[makeInsertSlot('FRONT',0,null,'front'),makeInsertSlot('FRONT',1,null,'back'),makeInsertSlot('FRONT',2,null,'front'),makeInsertSlot('FRONT',3,null,'back')];state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];state.mode='SINGLE';}
+    else if(state.rationPlan==='SINGLE_FRONT_RATION'){state.right=mk('FRONT',5);state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];state.mode='SINGLE';}
+    else if(state.rationPlan==='FRONT_RATION_SECOND'){state.right=mk('FRONT',5);state.left=mk('BACK',5);state.rationOld=makeInsertSlot('RATION_OLD',0,'RATION_OLD','rationOld');state.mode='DOUBLE';}
+    else {state.right=mk('FRONT',5);state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];state.doubleBack=mk('BACK',5);state.mode='DOUBLE';}
+  } else if(state.layout==='IDS_PASSPORT'){state.right=mk('FRONT',2);state.left=mk('BACK',2);state.passport=makeInsertSlot('PASSPORT',0,'PASSPORT','passport');state.mode='SINGLE';}
+  else if(state.layout==='PASSPORT'){state.right=[];state.left=[];state.passport=makeInsertSlot('PASSPORT',0,'PASSPORT','passport');state.mode='SINGLE';}
+  normalizeIndexes();
+}
+function updateLayoutUI(){
+  document.querySelectorAll('.layoutChoice').forEach(b=>b.classList.toggle('active',b.dataset.layout===state.layout));
+  const sub=$('#layoutSubOptions');if(!sub)return;
+  if(state.layout!=='IDS_RATION'){sub.classList.add('hidden');sub.innerHTML='';return;}
+  sub.classList.remove('hidden');
+  const opts=[['SINGLE_ALT','وجه واحد — 4 خانات: وجه، ظهر، وجه، ظهر + التموينية يساراً'],['SINGLE_FRONT_RATION','وجه واحد — 5 خانات وجه + التموينية يساراً'],['FRONT_RATION_SECOND','مستمكات في الوجه والبطاقة في الظهر — الصفحة الأولى 5 وجه + 5 ظهر، الصفحة الثانية التموينية وحدها'],['DOUBLE_RATION','وجه وكفة — الصفحة الأولى 5 وجه + التموينية، الصفحة الثانية 5 ظهر']];
+  sub.innerHTML=opts.map(([k,t])=>`<button class="subOption ${state.rationPlan===k?'active':''}" data-rplan="${k}">${t}</button>`).join('');
+  sub.querySelectorAll('[data-rplan]').forEach(b=>b.onclick=()=>{state.rationPlan=b.dataset.rplan;resetSlotsForLayout();render();saveSession()});
+}
+function setLayout(kind){state.layout=kind;if(kind==='IDS_RATION'&&!['SINGLE_ALT','SINGLE_FRONT_RATION','FRONT_RATION_SECOND','DOUBLE_RATION'].includes(state.rationPlan))state.rationPlan='SINGLE_ALT';resetSlotsForLayout();render();saveSession()}
+function genericSlotTitle(slot){if(slot.role==='rationOld'||slot.type==='RATION_OLD')return 'بطاقة تموينية قديمة';if(slot.role==='passport'||slot.type==='PASSPORT')return 'جواز السفر';return slot.role==='back'||slot.side==='BACK'?'ظهر الهوية':'وجه الهوية'}
+function emptySlotButton(slot){return `<button class="emptySlot" data-act="replace" data-side="${slot.side}" data-id="${slot.id}"><span class="emptyIcon">${icon('plus')}</span><span><b>إدراج ${esc(genericSlotTitle(slot))}</b><span>فتح المعرض أو مدير الملفات مباشرة</span></span></button>`}
+function slotCard(slot){const old=slot.type==='RATION_OLD'||slot.role==='rationOld';const title=slot.customTitle||genericSlotTitle(slot);const meta=old?'8 × 27 سم':(slot.role==='passport'||slot.type==='PASSPORT'?(state.layout==='PASSPORT'?'15 × 20 سم':'15 × 15 سم'):`${STD.w} × ${STD.h} سم`);if(slot.original){return `<article class="slotCard ${old?'rationAuto':''}"><div class="slotHead"><div class="slotTitle"><b>${esc(title)}</b><span>${esc(meta)} ${old?'<span class="autoBadge">تموينية</span>':''}</span></div><button class="miniBtn delete" data-act="remove" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div><div class="slotBody"><div class="thumbWrap ${old?'old':'std'}"><img src="${slot.processed||slot.original}" alt="${esc(title)}"></div><div><div class="slotActions"><button class="actionBtn primary" data-act="crop" data-side="${slot.side}" data-id="${slot.id}">${icon('crop')} قص وتصحيح</button><button class="actionBtn" data-act="adjust" data-side="${slot.side}" data-id="${slot.id}">${icon('tune')} معالجة وتوضيح</button><button class="actionBtn replaceBtn" data-act="replace" data-side="${slot.side}" data-id="${slot.id}">تبديل الصورة</button><button class="actionBtn danger" data-act="clear" data-side="${slot.side}" data-id="${slot.id}">إفراغ الصورة</button></div><div class="slotInfo">${old?'المقاس الثابت 8 × 27 سم.':'يمكن إعادة القص والتعديل في أي وقت.'}</div></div></div></article>`}
+return `<article class="slotCard"><div class="slotHead"><div class="slotTitle"><b>${esc(title)}</b><span>${esc(meta)}</span></div><button class="miniBtn delete" data-act="clear" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div>${emptySlotButton(slot)}</article>`}
+function renderSlots(side){let arr=side==='FRONT'?state.right:visibleLeft();if(side==='BACK'&&state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION')arr=[...state.left,...state.doubleBack];const root=side==='FRONT'?$('#rightSlots'):$('#leftSlots');root.innerHTML=arr.map(slotCard).join('');root.querySelectorAll('[data-act]').forEach(b=>b.onclick=handleSlotAction)}
+function renderPassportPanel(){const panel=$('#passportPanel'),root=$('#passportSlot'),btn=$('#passportInsertBtn'),label=$('#passportSizeLabel');if(!panel)return;const active=state.layout==='IDS_PASSPORT'||state.layout==='PASSPORT';panel.classList.toggle('hidden',!active);if(!active)return;if(!state.passport)state.passport=makeInsertSlot('PASSPORT',0,'PASSPORT','passport');label.textContent=state.layout==='PASSPORT'?'15 × 20 سم':'15 × 15 سم';root.innerHTML=slotCard(state.passport);root.querySelectorAll('[data-act]').forEach(b=>b.onclick=handleSlotAction);btn.onclick=()=>pickFile(state.passport,false)}
+function renderRationPanel(){const panel=$('#rationPanel'),root=$('#rationSlot'),btn=$('#rationInsertBtn');if(!panel)return;const active=state.layout==='IDS_RATION'&&state.rationPlan==='FRONT_RATION_SECOND';panel.classList.toggle('hidden',!active);if(!active)return;if(!state.rationOld)state.rationOld=makeInsertSlot('RATION_OLD',0,'RATION_OLD','rationOld');root.innerHTML=slotCard({...state.rationOld,side:'RATION_OLD'});root.querySelectorAll('[data-act]').forEach(b=>b.onclick=handleSlotAction);btn.onclick=()=>pickFile(state.rationOld,false)}
+function handleSlotAction(e){const b=e.currentTarget,side=b.dataset.side,id=b.dataset.id;const slot=side==='PASSPORT'?state.passport:(side==='RATION_OLD'?state.rationOld:(side==='FRONT'?state.right:state.left).find(s=>s.id===id)||state.doubleBack.find(s=>s.id===id));const act=b.dataset.act;if(!slot)return;if(act==='remove')removeSlot(slot);if(act==='crop')openEditor(slot,'crop');if(act==='adjust')openEditor(slot,'adjust');if(act==='replace')pickFile(slot,false);if(act==='clear'){clearSlot(slot)}}
+function getSlot(ref){if(ref.side==='PASSPORT')return state.passport;if(ref.side==='RATION_OLD')return state.rationOld;if(ref.side==='FRONT')return state.right.find(s=>s.id===ref.id);return [...state.left,...state.doubleBack].find(s=>s.id===ref.id)}
+function removeSlot(slot){if(slot.role==='rationOld'&&state.rationOld===slot){state.rationOld=makeInsertSlot('RATION_OLD',0,'RATION_OLD','rationOld');render();saveSession();return}let arr=slot.side==='PASSPORT'?null:(slot.side==='FRONT'?state.right:(state.doubleBack.includes(slot)?state.doubleBack:state.left));if(!arr||arr.length<=1){if(slot.side==='PASSPORT')return;toast('يجب إبقاء الخانة ضمن التخطيط الحالي');return}const i=arr.findIndex(s=>s.id===slot.id);arr.splice(i,1);render();saveSession()}
+function clearSlot(slot){if(slot.side==='PASSPORT'){state.passport=makeInsertSlot('PASSPORT',0,'PASSPORT','passport')}else if(slot.role==='rationOld'){state.rationOld=makeInsertSlot('RATION_OLD',0,'RATION_OLD','rationOld')}else{Object.assign(slot,blank(slot.side,slot.index),{type:slot.type,role:slot.role})}render();saveSession();toast('تم إفراغ الخانة')}
+function layoutPositions(){const pages=[];if(state.layout==='PASSPORT'){pages.push({right:[],left:[],passportOnly:true,passport:state.passport});return pages}if(state.layout==='IDS_PASSPORT'){pages.push({right:state.right,left:state.left,passportMode:true,passport:state.passport});return pages}if(state.layout==='IDS'){if(state.mode==='DOUBLE'){pages.push({right:state.right,left:[]});pages.push({right:[],left:state.left})}else pages.push({right:state.right,left:state.left});return pages}if(state.layout==='IDS_RATION'){if(state.rationPlan==='SINGLE_ALT')pages.push({right:state.right,left:state.left});else if(state.rationPlan==='SINGLE_FRONT_RATION')pages.push({right:state.right,left:state.left});else if(state.rationPlan==='FRONT_RATION_SECOND'){pages.push({right:state.right,left:state.left});pages.push({right:[],left:state.left.slice(0,1).filter(s=>s.type==='RATION_OLD'||s.role==='rationOld')})}else if(state.rationPlan==='DOUBLE_RATION'){pages.push({right:state.right,left:state.left});pages.push({right:[],left:state.doubleBack})}return pages}return pages}
+function buildA4(a4,page,pi){const top=6,left=8,slotW=85,slotH=55,rowGap=2,rightX=210-8-slotW,leftX=8;const add=(slot,x,y,w,h)=>{const box=document.createElement('div');box.className='a4-slot'+(slot&&slot.original?'':' empty');box.style.left=cm(x);box.style.top=cm(y);box.style.width=cm(w);box.style.height=cm(h);if(slot&&slot.original){const img=document.createElement('img');img.src=slot.processed||slot.original;box.appendChild(img);box.innerHTML+=`<div class="label">${esc(genericSlotTitle(slot))}</div><div class="editMark">${icon('edit')}</div>`;box.onclick=()=>openEditor(slot,'adjust')}else box.innerHTML='<div class="label">إدراج</div>';a4.appendChild(box)};if(page.passportOnly){add(page.passport,30,98.5,150,200);return}if(page.passportMode){page.right.forEach((s,i)=>add(s,rightX,top+i*(slotH+rowGap),slotW,slotH));page.left.forEach((s,i)=>add(s,leftX,top+i*(slotH+rowGap),slotW,slotH));add(page.passport,97.5,125,150,150);return}if(page.right)page.right.forEach((s,i)=>add(s,rightX,top+i*(slotH+rowGap),slotW,slotH));if(page.left){const old=page.left.find(s=>s.type==='RATION_OLD'||s.role==='rationOld');if(old){const normal=page.left.filter(s=>s!==old);normal.forEach((s,i)=>add(s,leftX,top+i*(slotH+rowGap),slotW,slotH));add(old,leftX,top,80,277)}else page.left.forEach((s,i)=>add(s,leftX,top+i*(slotH+rowGap),slotW,slotH))}}
+function render(){normalizeIndexes();updateLayoutUI();$('#singleBtn').classList.toggle('active',state.mode==='SINGLE');$('#doubleBtn').classList.toggle('active',state.mode==='DOUBLE');let summary='';if(state.layout==='IDS')summary=state.mode==='SINGLE'?'هويات فقط — ورقة واحدة':'هويات فقط — وجه ثم ظهر بورقتين';else if(state.layout==='IDS_RATION')summary=state.rationPlan==='SINGLE_ALT'?'وجه واحد — 4 هويات + تموينية قديمة':state.rationPlan==='SINGLE_FRONT_RATION'?'وجه واحد — 5 وجه + تموينية قديمة':state.rationPlan==='FRONT_RATION_SECOND'?'5 وجه + 5 ظهر، والتموينية في الورقة الثانية':'الصفحة الأولى 5 وجه + تموينية، والثانية 5 ظهر';else if(state.layout==='IDS_PASSPORT')summary='هويات + جواز 15 × 15 سم';else summary='جواز سفر فقط 15 × 20 سم';$('#layoutSummary').textContent=summary;$('#editorView').classList.toggle('hidden',state.tab!=='EDITOR');$('#previewView').classList.toggle('hidden',state.tab!=='PREVIEW');renderSlots('FRONT');renderSlots('BACK');renderPassportPanel();renderRationPanel();renderPages();updateCounts();$('#singleBtn').parentElement.classList.toggle('hidden',state.layout!=='IDS')}
+function updateCounts(){const rc=state.right.length,lc=state.left.length;$('#rightCount').textContent=`${rc} / 5`;$('#leftCount').textContent=state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION'?`1 + ${state.doubleBack.length} / 5`:`${lc} / 5`;$('#addRightBtn').disabled=rc>=5||state.layout==='PASSPORT';$('#addLeftBtn').disabled=lc>=5||state.layout==='PASSPORT'||(state.layout==='IDS_RATION'&&state.rationPlan!=='FRONT_RATION_SECOND'&&state.rationPlan!=='DOUBLE_RATION'&&state.left.some(s=>s.type==='RATION_OLD'||s.role==='rationOld'))}
+function showMenu(){showModal(`<div class="handle"></div><div class="modalHead"><h3>قائمة Luma Pro</h3><button class="closeBtn" data-close>×</button></div><div class="status">الإصدار ${CFG.versionName} — ${state.theme==='dark'?'الوضع الليلي':'الوضع النهاري'}</div><div class="menuList"><button id="aboutOpen">عن التطبيق</button><button id="privacyOpen">سياسة الخصوصية</button><button id="updatesOpen">التحديثات</button></div>`,modal=>{modal.querySelector('#aboutOpen').onclick=()=>openAbout();modal.querySelector('#privacyOpen').onclick=()=>openPrivacy();modal.querySelector('#updatesOpen').onclick=()=>openUpdates()})}
+function openAbout(){showModal(`<div class="handle"></div><div class="modalHead"><h3>عن التطبيق</h3><button class="closeBtn" data-close>×</button></div><div class="aboutSec"><h4>Luma Pro</h4><p>أداة لتجهيز صور المستمسكات الرسمية وترتيبها على ورقة A4، مع القص، تصحيح المنظور، تعديل الإضاءة والتباين والتشبع وتوضيح النص، والحفظ والمشاركة والطباعة.</p></div><div class="aboutSec"><h4>إخلاء المسؤولية</h4><p>هذا التطبيق أداة مساعدة لتنسيق الصور فقط، ولا يمثل أي جهة حكومية رسمية. يتحمل المستخدم مسؤولية التأكد من مطابقة الصور والتعليمات الرسمية قبل استخدامها.</p></div><div class="aboutSec"><h4>حسابات المطوّر</h4><div class="links"><a href="https://youtube.com/@hrbib?si=9JW758vIX3RQTgDb" target="_blank" rel="noopener">قناة اليوتيوب</a><a href="https://alhillawi.org" target="_blank" rel="noopener">alhillawi.org</a><a href="https://t.me/hr9ii8" target="_blank" rel="noopener">تيليجرام 1</a><a href="https://t.me/hr9jk" target="_blank" rel="noopener">تيليجرام 2</a></div></div>`)}
+function openPrivacy(){showModal(`<div class="handle"></div><div class="modalHead"><h3>سياسة الخصوصية</h3><button class="closeBtn" data-close>×</button></div><div class="aboutSec"><p>تتم معالجة الصور داخل المتصفح على جهازك باستخدام Canvas، ولا تُرفع الصور تلقائياً إلى خادم من هذا المشروع. عند استخدام المشاركة، يرسل المتصفح الملف إلى التطبيق الذي تختاره وفق آلية نظام التشغيل/المتصفح.</p></div>`)}
+async function openUpdates(){showModal(`<div class="handle"></div><div class="modalHead"><h3>التحديثات</h3><button class="closeBtn" data-close>×</button></div><div class="aboutSec"><h4>Luma Pro v${CFG.versionName}</h4><div id="updateStatus" class="updatesInfo">جاري التحقق من GitHub…</div><div class="links" style="margin-top:10px"><a href="${CFG.githubRepo}" target="_blank" rel="noopener">فتح مستودع GitHub</a></div></div>`,async modal=>{const box=modal.querySelector('#updateStatus');try{const r=await fetch(CFG.githubApi,{headers:{'Accept':'application/vnd.github+json'}});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();const tag=String(d.tag_name||d.name||'').trim();box.innerHTML=tag?`آخر إصدار منشور: <b>${esc(tag)}</b>${d.html_url?`<br><a href="${esc(d.html_url)}" target="_blank" rel="noopener">فتح صفحة الإصدار</a>`:''}`:'لا يوجد Release منشور بعد.'}catch(e){box.innerHTML=`تعذر التحقق الآن. تحقق من الإنترنت أو افتح مستودع GitHub مباشرة.`}})}
+
+function saveSession(){try{const serial={mode:state.mode,layout:state.layout,rationPlan:state.rationPlan,identityCount:state.identityCount,right:state.right,left:state.left,doubleBack:state.doubleBack,passport:state.passport,rationOld:state.rationOld,theme:state.theme};localStorage.setItem('luma_session',JSON.stringify(serial))}catch(e){/* quota can be exceeded by large images */}}
+function loadSession(){try{const raw=localStorage.getItem('luma_session');if(!raw)return;const s=JSON.parse(raw);if(s.right?.length){state.right=s.right.map(x=>({...blank(x.side||'FRONT',x.index||0),...x,adjustments:{...ADJ_DEFAULT,...x.adjustments}}))}if(s.left?.length){state.left=s.left.map(x=>({...blank(x.side||'BACK',x.index||0),...x,adjustments:{...ADJ_DEFAULT,...x.adjustments}}))}if(s.doubleBack?.length)state.doubleBack=s.doubleBack.map(x=>({...blank('BACK',x.index||0),...x,adjustments:{...ADJ_DEFAULT,...x.adjustments}}));if(s.passport)state.passport={...blank('PASSPORT',0),...s.passport,side:'PASSPORT',role:'passport',type:'PASSPORT',adjustments:{...ADJ_DEFAULT,...s.passport.adjustments}};if(s.rationOld)state.rationOld={...blank('RATION_OLD',0),...s.rationOld,side:'RATION_OLD',role:'rationOld',type:'RATION_OLD',adjustments:{...ADJ_DEFAULT,...s.rationOld.adjustments}};if(s.mode)state.mode=s.mode;if(s.layout)state.layout=s.layout;if(s.rationPlan)state.rationPlan=s.rationPlan;if(s.identityCount)state.identityCount=Number(s.identityCount)}catch(e){}}
+function updateTheme(){document.documentElement.dataset.theme=state.theme==='dark'?'dark':'light';localStorage.setItem('luma_theme',state.theme)}
+
+
+/* === UI/COUNT/EDIT FIXES V5 === */
+state.identityCount=Number(state.identityCount)||5;
+
+function slotIdentityNumber(slot){
+  if(!slot) return 1;
+  if(slot.role==='front'||slot.role==='back') return Math.floor((slot.index||0)/2)+1;
+  if(slot.side==='PASSPORT') return 1;
+  if(slot.role==='rationOld'||slot.type==='RATION_OLD') return 1;
+  return (slot.index||0)+1;
+}
+function genericSlotTitle(slot){
+  if(slot.role==='rationOld'||slot.type==='RATION_OLD')return 'بطاقة تموينية قديمة';
+  if(slot.role==='passport'||slot.type==='PASSPORT')return 'جواز السفر';
+  if(slot.role==='back'||slot.side==='BACK')return `ظهر الهوية رقم ${slotIdentityNumber(slot)}`;
+  if(slot.role==='front')return `وجه الهوية رقم ${slotIdentityNumber(slot)}`;
+  return `${slot.side==='BACK'?'ظهر':'وجه'} الهوية رقم ${slotIdentityNumber(slot)}`;
+}
+function normalizeArray(arr,side){arr.forEach((s,i)=>{s.index=i;s.side=side});}
+function resizeIdentityArray(arr,side,n){
+  const target=Math.max(1,Math.min(5,n));
+  while(arr.length>target)arr.pop();
+  while(arr.length<target)arr.push(makeInsertSlot(side,arr.length,null,'identity'));
+  normalizeArray(arr,side); return arr;
+}
+function setIdentityCount(n,opts={render:true}){
+  n=Math.max(1,Math.min(5,Number(n)||1));
+  if(state.layout==='IDS'){
+    state.identityCount=n; resizeIdentityArray(state.right,'FRONT',n); resizeIdentityArray(state.left,'BACK',n);
+  }else if(state.layout==='IDS_RATION'){
+    state.identityCount=n;
+    if(state.rationPlan==='SINGLE_ALT'){
+      n=Math.min(2,n); state.identityCount=n;
+      const target=n*2;
+      while(state.right.length>target)state.right.pop();
+      while(state.right.length<target){const i=state.right.length;state.right.push(makeInsertSlot('FRONT',i,null,i%2===0?'front':'back'));}
+      normalizeArray(state.right,'FRONT');
+      state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];
+    }else if(state.rationPlan==='SINGLE_FRONT_RATION'){
+      resizeIdentityArray(state.right,'FRONT',n); state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];
+    }else if(state.rationPlan==='FRONT_RATION_SECOND'){
+      resizeIdentityArray(state.right,'FRONT',n); resizeIdentityArray(state.left,'BACK',n);
+      state.rationOld=state.rationOld||makeInsertSlot('RATION_OLD',0,'RATION_OLD','rationOld');
+    }else{
+      resizeIdentityArray(state.right,'FRONT',n); state.left=[makeInsertSlot('BACK',0,'RATION_OLD','rationOld')];
+      resizeIdentityArray(state.doubleBack,'BACK',n);
+      state.rationOld=state.left[0];
+    }
+  }else if(state.layout==='IDS_PASSPORT'){
+    state.identityCount=Math.min(2,n); resizeIdentityArray(state.right,'FRONT',state.identityCount); resizeIdentityArray(state.left,'BACK',state.identityCount);
+    state.passport=state.passport||makeInsertSlot('PASSPORT',0,'PASSPORT','passport');
+  }else if(state.layout==='PASSPORT'){
+    state.identityCount=1; state.passport=state.passport||makeInsertSlot('PASSPORT',0,'PASSPORT','passport');
+  }
+  normalizeIndexes();
+  saveSession();
+  if(opts.render!==false)render();
+}
+function renderCountBar(){
+  const bar=$('#identityCountBar'), sel=$('#identityCountSelect'), label=$('#identityCountLabel'), hint=$('#countBarHint');
+  if(!bar||!sel)return;
+  let visible=true,max=5,text='';
+  if(state.layout==='IDS'){label.textContent='عدد الهويات';max=5;text='يُطبّق العدد نفسه على الوجه والظهر.';}
+  else if(state.layout==='IDS_RATION'){
+    if(state.rationPlan==='SINGLE_ALT'){label.textContent='عدد الهويات';max=2;text='الوجه والظهر بالتناوب على الجهة اليمنى + التموينية يساراً.';}
+    else if(state.rationPlan==='SINGLE_FRONT_RATION'){label.textContent='عدد الهويات';max=5;text='خانات الوجه يميناً + التموينية القديمة يساراً.';}
+    else if(state.rationPlan==='FRONT_RATION_SECOND'){label.textContent='عدد الهويات';max=5;text='نفس العدد للوجه والظهر، والتموينية في الورقة الثانية.';}
+    else {label.textContent='عدد الهويات';max=5;text='نفس العدد للوجه والكفة؛ التموينية ثابتة في الصفحة الأولى.';}
+  }else if(state.layout==='IDS_PASSPORT'){label.textContent='عدد الهويات';max=2;text='حد أقصى هويتان مع جواز السفر.';}
+  else {label.textContent='عدد الجوازات';max=1;text='هذا التخطيط مخصص لجواز واحد 15 × 20 سم.';}
+  if(!visible){bar.classList.add('hidden');return;}
+  bar.classList.remove('hidden');
+  const current=Math.max(1,Math.min(max,Number(state.identityCount)||1));
+  sel.innerHTML=Array.from({length:max},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  sel.value=current;hint.textContent=text;
+  sel.onchange=()=>setIdentityCount(sel.value);
+}
+function updateLayoutUI(){
+  document.querySelectorAll('.layoutChoice').forEach(b=>b.classList.toggle('active',b.dataset.layout===state.layout));
+  const sub=$('#layoutSubOptions');if(!sub)return;
+  if(state.layout!=='IDS_RATION'){sub.classList.add('hidden');sub.innerHTML='';renderCountBar();return;}
+  sub.classList.remove('hidden');
+  const opts=[['SINGLE_ALT','وجه واحد — وجه، ظهر، وجه، ظهر + التموينية يساراً'],['SINGLE_FRONT_RATION','وجه واحد — الهويات يميناً + التموينية يساراً'],['FRONT_RATION_SECOND','الوجه والظهر، والتموينية في الورقة الثانية وحدها'],['DOUBLE_RATION','وجه وكفة — الصفحة الأولى وجه + تموينية، والثانية ظهر']];
+  sub.innerHTML=opts.map(([k,t])=>`<button class="subOption ${state.rationPlan===k?'active':''}" data-rplan="${k}">${t}</button>`).join('');
+  sub.querySelectorAll('[data-rplan]').forEach(b=>b.onclick=()=>{state.rationPlan=b.dataset.rplan;resetSlotsForLayout();render();saveSession()});
+  renderCountBar();
+}
+function resetSlotsForLayout(){
+  state.doubleBack=[];state.passport=null;state.rationOld=null;
+  if(!state.identityCount)state.identityCount=5;
+  if(state.layout==='IDS'){resizeIdentityArray(state.right,'FRONT',Math.min(5,state.identityCount));resizeIdentityArray(state.left,'BACK',Math.min(5,state.identityCount));state.mode=state.mode||'SINGLE';}
+  else if(state.layout==='IDS_RATION'){
+    if(!['SINGLE_ALT','SINGLE_FRONT_RATION','FRONT_RATION_SECOND','DOUBLE_RATION'].includes(state.rationPlan))state.rationPlan='SINGLE_ALT';
+    setIdentityCount(state.identityCount,{render:false});
+    if(state.rationPlan==='SINGLE_ALT')state.mode='SINGLE';
+    else if(state.rationPlan==='SINGLE_FRONT_RATION')state.mode='SINGLE';
+    else state.mode='DOUBLE';
+  }else if(state.layout==='IDS_PASSPORT'){setIdentityCount(Math.min(2,state.identityCount),{render:false});state.mode='SINGLE';}
+  else{state.identityCount=1;state.passport=makeInsertSlot('PASSPORT',0,'PASSPORT','passport');state.mode='SINGLE';}
+  normalizeIndexes();
+}
+function setLayout(kind){
+  state.layout=kind;
+  if(kind==='IDS_RATION'&&!['SINGLE_ALT','SINGLE_FRONT_RATION','FRONT_RATION_SECOND','DOUBLE_RATION'].includes(state.rationPlan))state.rationPlan='SINGLE_ALT';
+  if(kind==='IDS_PASSPORT')state.identityCount=Math.min(2,state.identityCount||2);
+  else if(kind==='PASSPORT')state.identityCount=1;
+  else state.identityCount=Math.min(5,state.identityCount||5);
+  resetSlotsForLayout();render();saveSession();
+}
+function addSlot(side){
+  if(state.layout==='PASSPORT')return toast('تخطيط الجواز لا يسمح بإضافة خانة أخرى');
+  if(state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT'&&side==='FRONT'){
+    if(state.right.length>=4)return toast('الحد الأقصى في هذا التخطيط هويتان');
+    const no=state.right.length;state.right.push(makeInsertSlot('FRONT',no,null,no%2===0?'front':'back'));normalizeArray(state.right,'FRONT');state.identityCount=Math.ceil(state.right.length/2);render();saveSession();return;
+  }
+  const arr=side==='FRONT'?state.right:(state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION'?state.doubleBack:state.left);
+  const maxForLayout=state.layout==='IDS_PASSPORT'?2:5;if(arr.length>=maxForLayout)return toast('تم الوصول إلى الحد الأقصى للخانات في هذا التخطيط');
+  arr.push(makeInsertSlot(side,arr.length,null,'identity'));normalizeArray(arr,side);state.identityCount=arr.length;render();saveSession();
+}
+function removeSlot(slot){
+  if(slot.role==='rationOld'||slot.type==='RATION_OLD'){toast('البطاقة التموينية خانة ثابتة في هذا التخطيط');return;}
+  if(slot.side==='PASSPORT'){toast('خانة الجواز ثابتة في هذا التخطيط');return;}
+  let arr=slot.side==='FRONT'?state.right:(state.doubleBack.includes(slot)?state.doubleBack:state.left);
+  if(!arr)return;
+  if(state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT'&&arr===state.right){
+    if(arr.length<=2)return toast('يجب إبقاء هوية واحدة على الأقل');
+  }else if(arr.length<=1)return toast('يجب إبقاء خانة واحدة على الأقل');
+  const i=arr.findIndex(s=>s.id===slot.id);if(i<0)return;arr.splice(i,1);normalizeArray(arr,slot.side);
+  if(state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT')state.identityCount=Math.max(1,Math.ceil(arr.length/2));
+  else state.identityCount=Math.max(1,Math.min(5,Math.max(state.right.length,state.left.length,state.doubleBack.length)));
+  render();saveSession();
+}
+function emptySlotButton(slot){return `<button class="emptySlot" data-act="replace" data-side="${slot.side}" data-id="${slot.id}"><span class="emptyIcon">${icon('plus')}</span><span><b>إدراج ${esc(genericSlotTitle(slot))}</b><span>فتح المعرض أو مدير الملفات مباشرة</span></span></button>`}
+function slotCard(slot){
+  const old=slot.type==='RATION_OLD'||slot.role==='rationOld';
+  const title=slot.customTitle||genericSlotTitle(slot);
+  const meta=old?'8 × 27 سم':(slot.role==='passport'||slot.type==='PASSPORT'?(state.layout==='PASSPORT'?'15 × 20 سم':'15 × 15 سم'):`${STD.w} × ${STD.h} سم`);
+  const n=slotIdentityNumber(slot);
+  if(slot.original)return `<article class="slotCard ${old?'rationAuto':''}"><div class="slotHead"><div class="slotTitle"><b><span class="slotNumber">${n}</span>${esc(title)}</b><span>${esc(meta)} ${old?'<span class="autoBadge">تموينية</span>':''}</span></div><button class="miniBtn delete" title="حذف الخانة" data-act="remove" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div><div class="slotBody"><div class="thumbWrap ${old?'old':'std'}"><img src="${slot.processed||slot.original}" alt="${esc(title)}"></div><div><div class="slotActions"><button class="actionBtn primary" data-act="crop" data-side="${slot.side}" data-id="${slot.id}">${icon('crop')} قص وتصحيح</button><button class="actionBtn" data-act="adjust" data-side="${slot.side}" data-id="${slot.id}">${icon('tune')} معالجة وتوضيح</button><button class="actionBtn replaceBtn" data-act="replace" data-side="${slot.side}" data-id="${slot.id}">تبديل الصورة</button><button class="actionBtn danger" data-act="clear" data-side="${slot.side}" data-id="${slot.id}">إفراغ الصورة</button></div><div class="slotInfo">${old?'المقاس الثابت 8 × 27 سم.':'الخانة رقم '+n+' ويمكن حذفها أو إضافة خانات أخرى.'}</div></div></div></article>`;
+  return `<article class="slotCard"><div class="slotHead"><div class="slotTitle"><b><span class="slotNumber">${n}</span>${esc(title)}</b><span>${esc(meta)}</span></div><button class="miniBtn delete" title="حذف الخانة" data-act="remove" data-side="${slot.side}" data-id="${slot.id}">${icon('trash')}</button></div>${emptySlotButton(slot)}</article>`;
+}
+function getSlot(ref){if(ref.side==='PASSPORT')return state.passport;if(ref.side==='RATION_OLD')return state.rationOld;if(ref.side==='FRONT')return state.right.find(s=>s.id===ref.id);return [...state.left,...state.doubleBack].find(s=>s.id===ref.id)}
+function handleSlotAction(e){const b=e.currentTarget,side=b.dataset.side,id=b.dataset.id;const slot=getSlot({side,id}),act=b.dataset.act;if(!slot)return;if(act==='remove')removeSlot(slot);if(act==='crop')openEditor(slot,'crop');if(act==='adjust')openEditor(slot,'adjust');if(act==='replace')pickFile(slot,false);if(act==='clear')clearSlot(slot)}
+function renderSlots(side){let arr=side==='FRONT'?state.right:state.left;if(side==='BACK'&&state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION')arr=[...state.left,...state.doubleBack];const root=side==='FRONT'?$('#rightSlots'):$('#leftSlots');root.innerHTML=arr.map(slotCard).join('');root.querySelectorAll('[data-act]').forEach(b=>b.onclick=handleSlotAction)}
+function updateCounts(){
+  const rc=state.right.length,lc=(state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION')?state.doubleBack.length:state.left.length;
+  $('#rightCount').textContent=`${rc} / ${state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT'?4:5}`;
+  $('#leftCount').textContent=`${lc} / 5`;
+  const rab=$('#addRightBtn'),lab=$('#addLeftBtn');
+  rab.textContent='＋ إضافة خانة';lab.textContent='＋ إضافة خانة';rab.classList.add('addLimit');lab.classList.add('addLimit');
+  rab.disabled=state.layout==='PASSPORT'||(state.layout==='IDS_PASSPORT'?rc>=2:(state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT'?rc>=4:rc>=5));
+  lab.disabled=state.layout==='PASSPORT'||state.layout==='IDS_PASSPORT'&&lc>=2||(state.layout==='IDS_RATION'&&state.rationPlan==='SINGLE_ALT')||(state.layout==='IDS_RATION'&&state.rationPlan==='DOUBLE_RATION'?state.doubleBack.length>=5:state.left.length>=5);
+  renderCountBar();
+}
+function render(){normalizeIndexes();updateLayoutUI();$('#singleBtn').classList.toggle('active',state.mode==='SINGLE');$('#doubleBtn').classList.toggle('active',state.mode==='DOUBLE');let summary='';if(state.layout==='IDS')summary=state.mode==='SINGLE'?'هويات فقط — وجه وظهر في ورقة واحدة':'هويات فقط — وجه ثم ظهر في ورقتين';else if(state.layout==='IDS_RATION')summary=state.rationPlan==='SINGLE_ALT'?'وجه واحد — '+state.identityCount+' هوية + تموينية قديمة':state.rationPlan==='SINGLE_FRONT_RATION'?`وجه واحد — ${state.identityCount} هويات + تموينية قديمة`:state.rationPlan==='FRONT_RATION_SECOND'?`${state.identityCount} وجه + ${state.identityCount} ظهر، والتموينية في الورقة الثانية`:`الصفحة الأولى ${state.identityCount} وجه + تموينية، والثانية ${state.identityCount} ظهر`;else if(state.layout==='IDS_PASSPORT')summary=`${state.identityCount} هويات + جواز سفر 15 × 15 سم`;else summary='جواز سفر 15 × 20 سم';$('#layoutSummary').textContent=summary;$('#editorView').classList.toggle('hidden',state.tab!=='EDITOR');$('#previewView').classList.toggle('hidden',state.tab!=='PREVIEW');renderSlots('FRONT');renderSlots('BACK');renderPassportPanel();renderRationPanel();renderPages();updateCounts();$('#singleBtn').parentElement.classList.toggle('hidden',state.layout!=='IDS')}
+
+// Robust editor save: commit only after processing succeeds, then persist immediately.
+function setupEditor(modal,slot,corners,adj,tab){
+  let mode=tab==='crop'?'PERSPECTIVE':'PERSPECTIVE';
+  const img=modal.querySelector('#editorImg'),canvas=modal.querySelector('#editorCanvas'),poly=modal.querySelector('#quadPoly'),dots=[...modal.querySelectorAll('.handleDot')];
+  let work=corners.map(p=>({u:p.x/slot.nw,v:p.y/slot.nh}));
+  const layout=()=>{const r=canvas.getBoundingClientRect();dots.forEach((d,i)=>{d.style.left=(work[i].u*r.width)+'px';d.style.top=(work[i].v*r.height)+'px'});poly.setAttribute('points',work.map(p=>`${p.u},${p.v}`).join(' '));};
+  const init=()=>{layout();dots.forEach((dot,i)=>{let down=false;dot.onpointerdown=e=>{down=true;dot.setPointerCapture(e.pointerId);e.preventDefault()};dot.onpointermove=e=>{if(!down)return;const r=canvas.getBoundingClientRect();work[i].u=Math.max(0,Math.min(1,(e.clientX-r.left)/Math.max(1,r.width)));work[i].v=Math.max(0,Math.min(1,(e.clientY-r.top)/Math.max(1,r.height)));layout()};dot.onpointerup=()=>down=false;dot.onpointercancel=()=>down=false});};
+  img.onload=init;if(img.complete)init();
+  modal.querySelector('#perspTab').onclick=()=>{mode='PERSPECTIVE';modal.querySelector('#perspTab').classList.add('active');modal.querySelector('#rectTab').classList.remove('active')};
+  modal.querySelector('#rectTab').onclick=()=>{mode='RECT';modal.querySelector('#rectTab').classList.add('active');modal.querySelector('#perspTab').classList.remove('active')};
+  modal.querySelectorAll('[data-rot]').forEach(b=>b.onclick=()=>{adj.rotationAngle=Number(b.dataset.rot);refreshPreviewCss(img,adj)});
+  modal.querySelectorAll('input[type=range]').forEach(input=>{const key=input.id.replace('sl_','');input.oninput=()=>{adj[key]=Number(input.value);modal.querySelector('#val_'+key).textContent=fmtVal(adj[key],key);refreshPreviewCss(img,adj)}});
+  modal.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{adj.filterPreset=b.dataset.preset;modal.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x===b));applyPresetToSliders(modal,adj);refreshPreviewCss(img,adj)});
+  modal.querySelector('#resetEdit').onclick=()=>{Object.assign(adj,ADJ_DEFAULT);work=defaultCoverCorners(slot.nw,slot.nh,ratioForSlot(slot)).map(p=>({u:p.x/slot.nw,v:p.y/slot.nh}));modal.querySelectorAll('input[type=range]').forEach(i=>{const k=i.id.replace('sl_','');i.value=adj[k]});modal.querySelectorAll('.value').forEach(el=>{const k=el.id.replace('val_','');el.textContent=fmtVal(adj[k],k)});modal.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x.dataset.preset===adj.filterPreset));refreshPreviewCss(img,adj);layout()};
+  modal.querySelector('#freeCorners').onclick=()=>{mode='PERSPECTIVE';modal.querySelector('#perspTab').classList.add('active');modal.querySelector('#rectTab').classList.remove('active');toast('الزوايا أصبحت حرة ويمكن تحريك كل زاوية بشكل مستقل')};
+  modal.querySelector('#magneticCrop').onclick=async()=>{const oldText=modal.querySelector('#magneticCrop').textContent;modal.querySelector('#magneticCrop').disabled=true;try{work=await magneticSnapCorners(slot,work);layout();toast('تم التقاط الحواف المغناطيسية — عدّل الزوايا يدوياً عند الحاجة')}finally{modal.querySelector('#magneticCrop').disabled=false}};
+  const saveBtn=modal.querySelector('#applyEdit');
+  saveBtn.onclick=async()=>{if(saveBtn.disabled)return;saveBtn.disabled=true;saveBtn.textContent='جاري الحفظ…';try{let pts;if(mode==='RECT'){const u1=Math.min(work[0].u,work[2].u),v1=Math.min(work[0].v,work[2].v),u2=Math.max(work[0].u,work[2].u),v2=Math.max(work[0].v,work[2].v);pts=[{x:u1*slot.nw,y:v1*slot.nh},{x:u2*slot.nw,y:v1*slot.nh},{x:u2*slot.nw,y:v2*slot.nh},{x:u1*slot.nw,y:v2*slot.nh}]}else pts=work.map(p=>({x:p.u*slot.nw,y:p.v*slot.nh}));const nextAdj={...ADJ_DEFAULT,...adj};slot.corners=pts;slot.adjustments=nextAdj;slot.processed=await processSlotData(slot);saveSession();closeModal();render();toast('تم حفظ التعديلات بنجاح')}catch(err){console.error('Save edit failed',err);toast('تعذر حفظ التعديلات. حاول مرة أخرى')}finally{saveBtn.disabled=false;saveBtn.textContent='حفظ التعديلات'}};
+  refreshPreviewCss(img,adj);
+}
+
+$('#licenseBtn').onclick=openLicenseModal;document.querySelectorAll('.layoutChoice').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));$('#singleBtn').onclick=()=>setMode('SINGLE');$('#doubleBtn').onclick=()=>setMode('DOUBLE');$('#addRightBtn').onclick=()=>addSlot('FRONT');$('#addLeftBtn').onclick=()=>addSlot('BACK');$('#themeBtn').onclick=()=>{state.theme=state.theme==='dark'?'light':'dark';updateTheme();render()};$('#menuBtn').onclick=showMenu;$('#editorTab').onclick=()=>{state.tab='EDITOR';render()};$('#previewTab').onclick=()=>{state.tab='PREVIEW';render()};$('#a4TabBtn').onclick=()=>{state.tab='PREVIEW';render()};$('#zoomResetBtn').onclick=render;$('#saveBtn').onclick=()=>openFormat('save');$('#shareBtn').onclick=()=>openFormat('share');$('#printBtn').onclick=openPrintModal;$('#bottomSave').onclick=()=>openFormat('save');$('#bottomShare').onclick=()=>openFormat('share');$('#bottomPrint').onclick=openPrintModal;
+function openPrintModal(){showModal(`<div class="handle"></div><div class="modalHead"><h3>طباعة</h3><button class="closeBtn" data-close>×</button></div><div class="modalBody"><div class="note">ستتم طباعة المعاينة الحالية فقط بمقاس A4. يمكنك مراجعة الصفحات قبل فتح نافذة الطباعة.</div><div class="modalActions"><button data-close>إلغاء</button><button class="ok" id="openPrintNow">فتح الطباعة</button></div></div>`,modal=>{modal.querySelector('#openPrintNow').onclick=()=>{closeModal();doPrint()}})}
+
+function setupGlobalFileShortcuts(){document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();openFormat('save')}})}
+loadSession();if(!state.right.length&&!state.left.length&&!state.passport&&!state.rationOld)resetSlotsForLayout();updateTheme();setupGlobalFileShortcuts();render();enforceLicense();
+})();
+</script>
+</body>
+</html>
